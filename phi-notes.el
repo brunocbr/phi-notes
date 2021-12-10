@@ -153,7 +153,7 @@ tags:	 	%s
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
-  (if parent
+  (if (and parent (not (equal parent "")))
       (concat phi-parent-symbol phi-link-left-bracket-symbol
               parent phi-link-right-bracket-symbol)
     (concat phi-originating-symbol)))
@@ -245,13 +245,20 @@ tags:	 	%s
     (setq buffer (phi-create-common-note id title parent tags
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)
                                          body))
-    (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
-    (setq w (selected-window))
-    (if (and (equal current-prefix-arg nil) ; no C-u
-            (not (equal (current-buffer) phi-sidebar-buffer)))
-        (switch-to-buffer buffer)
-      (pop-to-buffer buffer)
-      (select-window w))))
+    (unless (equal "" parent)
+      (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
+      (setq w (selected-window))
+      (if (and (equal current-prefix-arg nil) ; no C-u
+               (not (equal (current-buffer) phi-sidebar-buffer)))
+          (switch-to-buffer buffer)
+        (pop-to-buffer buffer)
+        (select-window w))))
+
+(defun phi-new-originating-note ()
+  "Create an originating note. `C-u' to create note in other window."
+  (interactive)
+  (phi-new-common-note nil "")
+  )
 
 (defun phi-new-descendant-note ()
   "Create a child linked note. `C-u' to create note in other window."
