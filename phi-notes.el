@@ -198,7 +198,12 @@ tags:	 	%s
 (defun phi-visit-next-link ()
   "Visit the next linked note"
   (interactive)
-  (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point)))))
+  (let ((buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point)))))
+    (if (not (equal (current-buffer) phi-sidebar-buffer))
+        (switch-to-buffer buffer)
+      (progn (pop-to-buffer buffer)
+             (if phi-sidebar-persistent-window (delete-other-windows))))
+    (phi-mode)))
 
 (defun phi-get-note-field-contents (field)
   "Return the specified field contents for the current note"
@@ -364,7 +369,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (unless phi-sidebar-buffer
     (phi-sidebar-create-buffer (phi-get-parent-note-id)))
   (if (window-live-p (get-buffer-window phi-sidebar-buffer))
-      (delete-window (get-buffer-window phi-sidebar-buffer))
+      (progn (delete-window (get-buffer-window phi-sidebar-buffer))
+           (setq phi-sidebar-buffer nil))
     (phi-sidebar-with-parent)))
 
 
