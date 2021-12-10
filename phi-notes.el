@@ -6,11 +6,11 @@
 (defvar phi-file-header-annotation
   "\
 ---
-title:		%s   
+title:		'%s'   
 id:			Φ%s  
 citekey:		%s  
 loc:			%s  
-tags:			%s
+tags:		%s
 ...
 
 ")
@@ -18,9 +18,9 @@ tags:			%s
 (defvar phi-file-header-common
   "\
 ---
-title:		%s   
+title:		'%s'   
 id:			Φ%s  
-tags:			%s
+tags:		%s
 ...
 
 ")
@@ -33,6 +33,28 @@ tags:			%s
   "Tools for phi notes"
   :group 'tools)
 
+
+(defcustom phi-header-pre
+  "\
+---
+title:		'%s'   
+id:			Φ%s  
+"
+  "First part of YAML header"
+  :type 'string
+  :group 'phi)
+
+(defcustom phi-header-post
+  "\
+tags:		%s
+...
+
+"
+  "Final part of YAML header"
+  :type 'string
+  :group 'phi)
+
+
 (defcustom phi-notes-path "~/phi"
   "Path for note files"
   :type 'string
@@ -44,7 +66,7 @@ tags:			%s
   :group 'phi)
 
 (defcustom phi-originating-symbol "○"
-  "Symbol for originating notes breadcrumb"
+  "Symbol for a originating note's breadcrumb"
   :type 'string
   :group 'phi)
 
@@ -54,9 +76,25 @@ tags:			%s
   :group 'phi)
 
 (defcustom phi-child-symbol "▽"
-  "Symbol for child notes breadcrumb"
+  "Symbol for children notes breadcrumb"
   :type 'string
   :group 'phi)
+
+(defcustom phi-tags-field "tags"
+  "Field in YAML header for tags"
+  :type 'string
+  :group 'phi)
+
+(defcustom phi-loc-field "loc"
+  "Field in YAML header for location"
+  :type 'string
+  :group 'phi)
+
+(defcustom phi-citekey-field "citekey"
+  "Field in YAML header for cite key"
+  :type 'string
+  :group 'phi)
+
 
 (defcustom phi-breadcrumb t
   "Create breadcrumbs"
@@ -123,14 +161,7 @@ tags:			%s
 
 (defun phi-get-counter ()
   "Increment and return current counter"
-  9999)
-
-(defun phi-create-common-note (&optional title)
-  "Create a common note"
-  (interactive)
-  (with-temp-buffer
-    (insert (format phi-file-header-common
-                    "title" "id" "tags"))))
+  "9999")
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
@@ -139,14 +170,65 @@ tags:			%s
               parent phi-link-right-bracket-symbol)
     (concat phi-originating-symbol)))
 
+(defun phi-get-current-note-id ()
+  "Get the current note id"
+  (interactive)
+  (let ((filename (file-name-nondirectory buffer-file-name)))
+    (string-match (concat "^" phi-id-regex) filename)
+    (match-string 0 filename)))
+
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
   (save-excursion
     (goto-char (point-min))
-    (if (and (re-search-forward (concat "^" phi-parent-symbol))
+    (if (and (re-search-forward (concat "^" phi-parent-symbol) nil t)
              (looking-at (concat phi-link-left-bracket-symbol-re
                                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
+
+
+(defun phi-get-note-field-contents (field)
+  "Return the specified field contents for the current note"
+  (save-excursion
+    (goto-char (point-min))
+    (if  (and (re-search-forward (concat "^" field ":\\s-*") nil t)
+              (looking-at (concat ".*$")))
+        (match-string-no-properties 0))))
+
+(defun phi-create-common-note (id title &optional parent tags citekey loc)
+  "Create a common note buffer"
+  (interactive)
+  (with-current-buffer (generate-new-buffer "New PHI Note")
+    (insert (format phi-header-pre
+                    title id))
+    (when citekey (insert (concat phi-citekey-field ":\t" citekey "  ")))
+    (when loc (insert (concat phi-loc-field ":\t" loc "  ")))
+    (insert (format phi-header-post tags))
+    (insert (phi-construct-breadcrumb parent))
+    (insert "\
+
+
+")
+    (write-file (concat phi-notes-path "/" id " " title "." phi-default-file-extension))
+    (phi-mode)
+    (current-buffer)))
+
+(when "" "3")
+
+(defun phi-new-common-note ()
+  "Generate a new common note"
+  (interactive)
+  (let ((id (phi-get-counter))
+        (parent (phi-get-current-note-id))
+        (title (read-string "title: "))
+        (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
+        (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
+        (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
+        (buffer nil))
+    (setq buffer (phi-create-common-note id title parent tags
+                                         (unless (string= citekey "") citekey) (unless (string= loc "") loc)))
+    (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
+    (pop-to-buffer buffer)))
 
 
 (defun phi-matching-file-name (id)
@@ -196,7 +278,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   :group 'phi-sidebar)
 
 (defcustom phi-sidebar-olivetti-width
-  40
+  38
   "olivetti-mode column width for sidebar buffer"
   :type 'integer
   :group 'phi-sidebar)
@@ -261,6 +343,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
+    (define-key map (kbd "C-c n d") #'phi-create-common-note)
     map)
   "Main mode map for `phi-mode'.")
 
