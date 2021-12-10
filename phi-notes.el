@@ -166,11 +166,12 @@ tags:		%s
   "Increment and return current counter"
   (let (counter)
     (with-temp-buffer
-      (insert-file-contents phi-counter-path))
-    (setq counter (format phi-id-format (1+ (string-to-number (buffer-string)))))
+      (insert-file-contents phi-counter-path)
+      (setq counter (format phi-id-format (1+ (string-to-number (buffer-string))))))
+    (with-temp-file phi-counter-path
+      (insert counter))
+    counter
     ))
-
-(phi-get-counter)
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
