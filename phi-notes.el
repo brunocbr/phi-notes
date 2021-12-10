@@ -254,11 +254,12 @@ tags:	 	%s
       (select-window w))))
 
 (defun phi-new-descendant-note ()
-  "Create a child linked note."
+  "Create a child linked note. `C-u' to create note in other window."
   (interactive)
   (phi-new-common-note))
 
 (defun phi-kill-to-new-note (start end)
+  "Kill region to linked note. `C-u' to create note in other window."
   (interactive "r")
   (let ((body (buffer-substring-no-properties start end))
         (buffer (current-buffer)))
@@ -267,6 +268,7 @@ tags:	 	%s
       (kill-region start end))))
 
 (defun phi-yank-to-new-note ()
+  "Yank to linked note. `C-u' to create note in other window."
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
     (phi-new-common-note body)))
