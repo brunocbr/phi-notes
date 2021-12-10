@@ -204,7 +204,7 @@ tags:	%s
               (looking-at (concat ".*$")))
         (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0)))))
 
-(defun phi-create-common-note (id title &optional parent tags citekey loc)
+(defun phi-create-common-note (id title &optional parent tags citekey loc body)
   "Create a common note buffer"
   (interactive)
   (with-current-buffer (generate-new-buffer "New PHI Note")
@@ -218,23 +218,33 @@ tags:	%s
 
 
 ")
+    (when body (insert body))
     (write-file (concat phi-notes-path "/" id " " title "." phi-default-file-extension))
     (phi-mode)
     (current-buffer)))
 
-(defun phi-new-common-note ()
+(defun phi-extract-title-from-body (body)
+  "Extract title from the first line of `body'"
+  (with-temp-buffer
+    (when body (insert body))
+    (goto-char (point-min))
+    (if (looking-at "#*\s*\\(.\\{1,40\\}\\)")
+        (replace-regexp-in-string "\s*#*\s*$" "" (match-string-no-properties 1)))))
+
+(defun phi-new-common-note (&optional body parent)
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let ((id (phi-get-counter))
-        (parent (phi-get-current-note-id))
-        (title (read-string "title: "))
+        (title (read-string "title: " (phi-extract-title-from-body body)))
         (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
         (buffer nil)
         (w nil))
+    (unless parent (setq parent (phi-get-current-note-id)))
     (setq buffer (phi-create-common-note id title parent tags
-                                         (unless (string= citekey "") citekey) (unless (string= loc "") loc)))
+                                         (unless (string= citekey "") citekey) (unless (string= loc "") loc)
+                                         body))
     (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
     (setq w (selected-window))
     (if (and (equal current-prefix-arg nil) ; no C-u
@@ -243,6 +253,13 @@ tags:	%s
       (pop-to-buffer buffer)
       (select-window w))))
 
+(defun phi-kill-to-new-note (start end)
+  (interactive "r")
+  (let ((body (buffer-substring-no-properties start end))
+        (buffer (current-buffer)))
+    (phi-new-common-note body)
+    (with-current-buffer buffer
+      (kill-region start end))))
 
 
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -353,6 +370,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
     (define-key map (kbd "C-c n d") #'phi-new-common-note)
+    (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
     map)
