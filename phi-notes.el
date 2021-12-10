@@ -194,6 +194,10 @@ tags:		%s
     (string-match (concat "^" phi-id-regex) filename)
     (match-string 0 filename)))
 
+(defun phi-matching-file-name (id)
+  "Return the first match of a file name starting with id"
+  (nth 0 (file-name-all-completions id phi-notes-path)))
+
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
   (save-excursion
@@ -203,6 +207,10 @@ tags:		%s
                                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
 
+(defun phi-visit-parent-note ()
+  "Visit the parent note"
+  (interactive)
+  (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)))))
 
 (defun phi-get-note-field-contents (field)
   "Return the specified field contents for the current note"
@@ -230,8 +238,6 @@ tags:		%s
     (phi-mode)
     (current-buffer)))
 
-(when "" "3")
-
 (defun phi-new-common-note ()
   "Generate a new common note"
   (interactive)
@@ -252,10 +258,6 @@ tags:		%s
       (pop-to-buffer buffer)
       (select-window w))))
 
-
-(defun phi-matching-file-name (id)
-  "Return the first match of a file name starting with id"
-  (nth 0 (file-name-all-completions id phi-notes-path)))
 
 
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -366,6 +368,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
     (define-key map (kbd "C-c n d") #'phi-new-common-note)
+    (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     map)
   "Main mode map for `phi-mode'.")
 
