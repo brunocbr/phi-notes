@@ -237,7 +237,7 @@ tags:	 	%s
   (with-temp-buffer
     (when body (insert body))
     (goto-char (point-min))
-    (if (looking-at "#*\s*\\(.\\{1,40\\}\\)")
+    (if (looking-at "#*\s*\\(.\\{1,72\\}\\)")
         (replace-regexp-in-string "\s*#*\s*$" "" (match-string-no-properties 1)))))
 
 (defun phi-new-common-note (&optional body parent)
