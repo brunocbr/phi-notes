@@ -212,6 +212,19 @@ tags:		%s
   (interactive)
   (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)))))
 
+(defun phi-get-next-link-at-point ()
+  "Search forward for wikilink and return id"
+  (save-excursion
+    (if (re-search-forward
+         (concat phi-link-left-bracket-symbol-re
+                 "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re))
+        (match-string-no-properties 1))))
+
+(defun phi-visit-next-link ()
+  "Visit the next linked note"
+  (interactive)
+  (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point)))))
+
 (defun phi-get-note-field-contents (field)
   "Return the specified field contents for the current note"
   (save-excursion
@@ -369,6 +382,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
     (define-key map (kbd "C-c n d") #'phi-new-common-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
+    (define-key map (kbd "C-c j") #'phi-visit-next-link)
     map)
   "Main mode map for `phi-mode'.")
 
