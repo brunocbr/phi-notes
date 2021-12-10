@@ -3,29 +3,6 @@
 
 ;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar phi-file-header-annotation
-  "\
----
-title:		'%s'   
-id:			Φ%s  
-citekey:		%s  
-loc:				%s  
-tags:		%s
-...
-
-")
-
-(defvar phi-file-header-common
-  "\
----
-title:		'%s'   
-id:			Φ%s  
-tags:		%s
-...
-
-")
-
-
 
 ;; Options
 
@@ -46,7 +23,7 @@ id:			Φ%s
 
 (defcustom phi-header-post
   "\
-tags:		%s
+tags:	%s
 ...
 
 "
@@ -154,12 +131,6 @@ tags:		%s
   :group 'phi)
 
 
-(defcustom phi-switch-to-buffer nil
-  "Switch to buffer when a new note is created"
-  :type 'bool
-  :group 'phi)
-
-
 (defcustom phi-mode-lighter "Φ"
   "Mode-line indicator for `phi-mode'."
   :type '(choice (const :tag "No lighter" "") string)
@@ -252,7 +223,7 @@ tags:		%s
     (current-buffer)))
 
 (defun phi-new-common-note ()
-  "Generate a new common note"
+  "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let ((id (phi-get-counter))
         (parent (phi-get-current-note-id))
@@ -266,7 +237,8 @@ tags:		%s
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)))
     (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
     (setq w (selected-window))
-    (if phi-switch-to-buffer
+    (if (and (equal current-prefix-arg nil) ; no C-u
+            (not (equal (current-buffer) phi-sidebar-buffer)))
         (switch-to-buffer buffer)
       (pop-to-buffer buffer)
       (select-window w))))
