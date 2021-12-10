@@ -135,7 +135,8 @@ tags:			%s
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
   (if parent
-      (concat phi-parent-symbol phi-link-left-bracket-symbol parent phi-link-right-bracket-symbol)
+      (concat phi-parent-symbol phi-link-left-bracket-symbol
+              parent phi-link-right-bracket-symbol)
     (concat phi-originating-symbol)))
 
 (defun phi-get-parent-note-id ()
@@ -143,7 +144,8 @@ tags:			%s
   (save-excursion
     (goto-char (point-min))
     (if (and (re-search-forward (concat "^" phi-parent-symbol))
-             (looking-at (concat phi-link-left-bracket-symbol-re "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
+             (looking-at (concat phi-link-left-bracket-symbol-re
+                                 "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
 
 
@@ -211,7 +213,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   buffer)
 
 (defun phi-sidebar-create-buffer (id)
-  (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer (find-file-noselect (phi-matching-file-name id)))))
+  (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
+                            (find-file-noselect (phi-matching-file-name id)))))
 
 (defun phi-sidebar-create-window (id)
   (display-buffer-in-side-window (phi-sidebar-create-buffer id)
@@ -239,10 +242,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   'action #'phi-find-file-button)
 
 (defun phi-find-file-button (button)
-  (let ((buffer (find-file-noselect (phi-matching-file-name (buffer-substring (button-start button) (button-end button))))))
+  (let ((buffer (find-file-noselect (phi-matching-file-name
+                                     (buffer-substring (button-start button) (button-end button))))))
     (pop-to-buffer buffer)
     (phi-mode)
-    (delete-other-windows)))
+    (if phi-sidebar-persistent-window (delete-other-windows))))
 
 (defun phi-buttonize-buffer ()
   "Turn all wiki links into buttons"
@@ -250,7 +254,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward
-            (concat phi-link-left-bracket-symbol-re "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) nil t)
+            (concat phi-link-left-bracket-symbol-re
+                    "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) nil t)
       (make-button (match-beginning 1) (match-end 1) :type 'phi-linked-note))))
 
 (defvar phi-mode-map
