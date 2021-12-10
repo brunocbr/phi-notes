@@ -153,6 +153,13 @@ tags:		%s
   :type 'string
   :group 'phi)
 
+
+(defcustom phi-switch-to-buffer nil
+  "Switch to buffer when a new note is created"
+  :type 'bool
+  :group 'phi)
+
+
 (defcustom phi-mode-lighter "Φ"
   "Mode-line indicator for `phi-mode'."
   :type '(choice (const :tag "No lighter" "") string)
@@ -240,8 +247,10 @@ tags:		%s
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)))
     (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
     (setq w (selected-window))
-    (pop-to-buffer buffer)
-    (select-window w)))
+    (if phi-switch-to-buffer
+        (switch-to-buffer buffer)
+      (pop-to-buffer buffer)
+      (select-window w))))
 
 
 (defun phi-matching-file-name (id)
