@@ -224,11 +224,14 @@ tags:		%s
         (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
-        (buffer nil))
+        (buffer nil)
+        (w nil))
     (setq buffer (phi-create-common-note id title parent tags
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)))
     (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
-    (pop-to-buffer buffer)))
+    (setq w (selected-window))
+    (pop-to-buffer buffer)
+    (select-window w)))
 
 
 (defun phi-matching-file-name (id)
@@ -343,7 +346,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
-    (define-key map (kbd "C-c n d") #'phi-create-common-note)
+    (define-key map (kbd "C-c n d") #'phi-new-common-note)
     map)
   "Main mode map for `phi-mode'.")
 
