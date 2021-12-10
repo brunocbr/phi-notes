@@ -23,7 +23,7 @@ id:			Φ%s
 
 (defcustom phi-header-post
   "\
-tags:	%s
+tags:	 	%s
 ...
 
 "
@@ -211,7 +211,7 @@ tags:	%s
     (insert (format phi-header-pre
                     title id))
     (when citekey (insert (concat phi-citekey-field ":\t" (replace-regexp-in-string "\s+$" "" citekey) "  \n")))
-    (when loc (insert (concat phi-loc-field ":\t" (replace-regexp-in-string "\s+$" "" loc) "  \n")))
+    (when loc (insert (concat phi-loc-field ":\t\t" (replace-regexp-in-string "\s+$" "" loc) "  \n")))
     (insert (format phi-header-post tags))
     (insert (phi-construct-breadcrumb parent))
     (insert "\
@@ -260,6 +260,11 @@ tags:	%s
     (phi-new-common-note body)
     (with-current-buffer buffer
       (kill-region start end))))
+
+(defun phi-yank-to-new-note ()
+  (interactive)
+  (let ((body (substring-no-properties (car kill-ring))))
+    (phi-new-common-note body)))
 
 
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,6 +376,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
     (define-key map (kbd "C-c n d") #'phi-new-common-note)
     (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
+    (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
     map)
