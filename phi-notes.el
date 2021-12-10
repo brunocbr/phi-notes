@@ -60,7 +60,7 @@ tags:		%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-counter-path nil
+(defcustom phi-counter-path "~/phi/.phi_counter"
   "Path for counter file"
   :type 'string
   :group 'phi)
@@ -130,7 +130,10 @@ tags:		%s
   :type 'string
   :group 'phi)
 
-
+(defcustom phi-id-format "%04d"
+  "Zero-padded format for note id"
+  :type 'string
+  :group 'phi)
 
 (defcustom phi-tag-symbol "#"
   "Symbol to prepend tags"
@@ -161,7 +164,13 @@ tags:		%s
 
 (defun phi-get-counter ()
   "Increment and return current counter"
-  "9999")
+  (let (counter)
+    (with-temp-buffer
+      (insert-file-contents phi-counter-path))
+    (setq counter (format phi-id-format (1+ (string-to-number (buffer-string)))))
+    ))
+
+(phi-get-counter)
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
@@ -356,4 +365,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   :keymap phi-mode-map
   )
 
-(provide 'phi-mode)
+(provide 'phi-notes)
+
+
