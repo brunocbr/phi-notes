@@ -9,7 +9,7 @@
 title:		'%s'   
 id:			Φ%s  
 citekey:		%s  
-loc:			%s  
+loc:				%s  
 tags:		%s
 ...
 
@@ -231,7 +231,7 @@ tags:		%s
     (goto-char (point-min))
     (if  (and (re-search-forward (concat "^" field ":\\s-*") nil t)
               (looking-at (concat ".*$")))
-        (match-string-no-properties 0))))
+        (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0)))))
 
 (defun phi-create-common-note (id title &optional parent tags citekey loc)
   "Create a common note buffer"
@@ -239,8 +239,8 @@ tags:		%s
   (with-current-buffer (generate-new-buffer "New PHI Note")
     (insert (format phi-header-pre
                     title id))
-    (when citekey (insert (concat phi-citekey-field ":\t" citekey "  ")))
-    (when loc (insert (concat phi-loc-field ":\t" loc "  ")))
+    (when citekey (insert (concat phi-citekey-field ":\t" (replace-regexp-in-string "\s+$" "" citekey) "  \n")))
+    (when loc (insert (concat phi-loc-field ":\t" (replace-regexp-in-string "\s+$" "" loc) "  \n")))
     (insert (format phi-header-post tags))
     (insert (phi-construct-breadcrumb parent))
     (insert "\
