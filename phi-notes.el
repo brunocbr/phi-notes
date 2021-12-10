@@ -373,6 +373,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
            (setq phi-sidebar-buffer nil))
     (phi-sidebar-with-parent)))
 
+(defun phi-focus-sidebar ()
+  "Focus on PHI Sidebar"
+  (interactive)
+  (select-window (phi-sidebar-with-parent)))
 
 (define-button-type 'phi-linked-note
   'follow-link t
@@ -398,6 +402,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
+    (define-key map (kbd "C-c :") #'phi-focus-sidebar)
     (define-key map (kbd "C-c n d") #'phi-new-descendant-note)
     (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
