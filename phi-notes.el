@@ -1,4 +1,8 @@
 ; phi-notes.el - by Bruno Conte, bruno@brunoc.com.br, 2021
+
+;; define a global key somewhere, e. g.:
+;; 	(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
+
                                         ;
 
 ;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
