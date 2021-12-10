@@ -196,14 +196,17 @@ tags:	 	%s
         (match-string-no-properties 1))))
 
 (defun phi-visit-next-link ()
-  "Visit the next linked note"
+  "Visit the next linked note. `C-u' to visit note in other window."
   (interactive)
   (let ((buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point)))))
-    (if (not (equal (current-buffer) phi-sidebar-buffer))
+    (if (and (not (equal (current-buffer) phi-sidebar-buffer))
+             (equal current-prefix-arg nil)) ; no C-u
         (switch-to-buffer buffer)
       (progn (pop-to-buffer buffer)
-             (if phi-sidebar-persistent-window (delete-other-windows))))
-    (phi-mode)))
+             (if (and phi-sidebar-persistent-window
+                      (equal current-prefix-arg nil)) ; no C-u
+                      (delete-other-windows)))
+    (phi-mode))))
 
 (defun phi-get-note-field-contents (field)
   "Return the specified field contents for the current note"
