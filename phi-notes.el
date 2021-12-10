@@ -253,6 +253,11 @@ tags:	 	%s
       (pop-to-buffer buffer)
       (select-window w))))
 
+(defun phi-new-descendant-note ()
+  "Create a child linked note."
+  (interactive)
+  (phi-new-common-note))
+
 (defun phi-kill-to-new-note (start end)
   (interactive "r")
   (let ((body (buffer-substring-no-properties start end))
@@ -374,7 +379,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
-    (define-key map (kbd "C-c n d") #'phi-new-common-note)
+    (define-key map (kbd "C-c n d") #'phi-new-descendant-note)
     (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
