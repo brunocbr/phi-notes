@@ -42,8 +42,8 @@
 (defcustom phi-header-pre
   "\
 ---
-title:		'%s'
-id:			Φ%s
+title:		'%s'  
+id:			Φ%s  
 "
   "First part of YAML header"
   :type 'string
