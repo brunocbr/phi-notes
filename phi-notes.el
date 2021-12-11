@@ -1,12 +1,36 @@
-; phi-notes.el - by Bruno Conte, bruno@brunoc.com.br, 2021
+;;; phi-notes.el --- Zettelkasten note management -*- lexical-binding:t -*-
 
+;; Copyright (C) 2021  Bruno Conte
+
+;; Author: Bruno Conte <bruno@brunoc.com.br>
+;; URL: https://github.com/brunocbr/phi-notes/
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "27.1"))
+;; Keywords: zettelkasten, writing
+
+;; This file is not part of GNU Emacs.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or (at
+;; your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
 ;; define a global key somewhere, e. g.:
 ;; 	(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
 
-                                        ;
+;;; Code:
 
-;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Options
 
@@ -18,8 +42,8 @@
 (defcustom phi-header-pre
   "\
 ---
-title:		'%s'   
-id:			Φ%s  
+title:		'%s'
+id:			Φ%s
 "
   "First part of YAML header"
   :type 'string
@@ -421,5 +445,3 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   )
 
 (provide 'phi-notes)
-
-
