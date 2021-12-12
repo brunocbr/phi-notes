@@ -217,7 +217,7 @@ tags:	 	%s
   (let ((id (phi-get-parent-note-id)))
     (if id
         (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id))))
-      (message "The current note has no parent!"))))
+      (error "The current note has no parent"))))
 
 (defun phi-get-next-link-at-point ()
   "Search forward for wikilink and return id"
@@ -384,8 +384,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   buffer)
 
 (defun phi-sidebar-create-buffer (id)
-  (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
-                            (find-file-noselect (phi-matching-file-name id)))))
+  (let ((file (phi-matching-file-name id)))
+        (if file
+            (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
+                                      (find-file-noselect file)))
+          (error "No matching file for note id %s" id))))
 
 (defun phi-sidebar-create-window (id)
   (display-buffer-in-side-window (phi-sidebar-create-buffer id)
@@ -401,8 +404,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-toggle-sidebar ()
   "Toggle visibility of PHI Sidebar"
   (interactive)
-  ;; (unless phi-sidebar-buffer
-  ;;   (phi-sidebar-create-buffer (phi-get-parent-note-id)))
   (if (and phi-sidebar-buffer (window-live-p (get-buffer-window phi-sidebar-buffer)))
       (progn (delete-window (get-buffer-window phi-sidebar-buffer))
            (setq phi-sidebar-buffer nil))
