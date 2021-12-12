@@ -70,6 +70,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-master-note-id "0000"
+  "Default note for the sidebar when no ancestor is found"
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-originating-symbol "○"
   "Symbol for a originating note's breadcrumb"
   :type 'string
@@ -209,7 +214,10 @@ tags:	 	%s
 (defun phi-visit-parent-note ()
   "Visit the parent note"
   (interactive)
-  (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)))))
+  (let ((id (phi-get-parent-note-id)))
+    (if id
+        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id))))
+      (message "The current note has no parent!"))))
 
 (defun phi-get-next-link-at-point ()
   "Search forward for wikilink and return id"
@@ -388,14 +396,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-sidebar-with-parent ()
   "Open PHI Sidebar with parent note"
   (interactive)
-  (phi-sidebar-create-window (phi-get-parent-note-id)))
+  (phi-sidebar-create-window (or (phi-get-parent-note-id) phi-master-note-id)))
 
 (defun phi-toggle-sidebar ()
   "Toggle visibility of PHI Sidebar"
   (interactive)
-  (unless phi-sidebar-buffer
-    (phi-sidebar-create-buffer (phi-get-parent-note-id)))
-  (if (window-live-p (get-buffer-window phi-sidebar-buffer))
+  ;; (unless phi-sidebar-buffer
+  ;;   (phi-sidebar-create-buffer (phi-get-parent-note-id)))
+  (if (and phi-sidebar-buffer (window-live-p (get-buffer-window phi-sidebar-buffer)))
       (progn (delete-window (get-buffer-window phi-sidebar-buffer))
            (setq phi-sidebar-buffer nil))
     (phi-sidebar-with-parent)))
