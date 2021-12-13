@@ -65,7 +65,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-counter-path "~/phi/.phi_counter"
+(defcustom phi-counter-file ".phi_counter"
   "Path for counter file"
   :type 'string
   :group 'phi)
@@ -175,7 +175,8 @@ tags:	 	%s
 
 (defun phi-get-counter ()
   "Increment and return current counter"
-  (let (counter)
+  (let ((counter)
+        (phi-counter-path (concat phi-notes-path "/" phi-counter-file)))
     (with-temp-buffer
       (insert-file-contents phi-counter-path)
       (setq counter (format phi-id-format (1+ (string-to-number (buffer-string))))))
@@ -200,7 +201,7 @@ tags:	 	%s
 
 (defun phi-matching-file-name (id)
   "Return the first match of a file name starting with id"
-  (nth 0 (file-name-all-completions id phi-notes-path)))
+  (nth 0 (file-name-all-completions id ""))) ;; blank for current dir instead of phi-notes-path
 
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
