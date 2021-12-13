@@ -27,6 +27,14 @@
 ;;
 ;; define a global key somewhere, e. g.:
 ;; 	(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
+;;
+;; for helm-bibtex support:
+;;  (helm-bibtex-helmify-action bibtex-completion-create-phi-note helm-bibtex-create-phi-note)
+;;
+;;  (helm-add-action-to-source
+;;   "Create PHI bibliographical annotation" 'helm-bibtex-create-phi-note
+;;   helm-source-bibtex 1)
+
 
 ;;; Code:
 
@@ -435,6 +443,28 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
             (concat phi-link-left-bracket-symbol-re
                     "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) nil t)
       (make-button (match-beginning 1) (match-end 1) :type 'phi-linked-note))))
+
+;; bibtex-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun bibtex-completion-create-phi-note (keys)
+  "Create a PHI bibliographical annotation note with the first entry in KEYS."
+  (let* ((key (nth 0 keys))
+         (entry (bibtex-completion-get-entry key))
+         (year (or (bibtex-completion-get-value "year" entry)
+                   (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
+         (author (bibtex-completion-get-value "author" entry))
+         (title (bibtex-completion-get-value "title" entry))
+         (note-title (read-string "title: " (format "%s (%s) %s" author year title)))
+         (tags (read-string "tags: " (concat phi-tag-symbol phi-annotation-tag)))
+         (loc (read-string "loc: " "0"))
+         (id (phi-get-counter))
+         (buffer (phi-create-common-note id note-title nil tags key loc nil)))
+    (if (equal current-prefix-arg nil) ; no C-u
+        (switch-to-buffer buffer)
+      (pop-to-buffer buffer))))
+
+
+;; phi-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
