@@ -113,6 +113,10 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-project-field "proj"
+  "Field in YAML header for project note id"
+  :type 'string
+  :group 'phi)
 
 (defcustom phi-breadcrumb t
   "Create breadcrumbs"
@@ -219,6 +223,13 @@ tags:	 	%s
              (looking-at (concat phi-link-left-bracket-symbol-re
                                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
+
+(defun phi-get-linked-project-note-id ()
+  "Return the id for the project this note is linked to"
+  (let ((project (phi-get-note-field-contents phi-project-field)))
+    (if (string-match (concat phi-link-left-bracket-symbol-re "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) project)
+        (match-string-no-properties 1 project)
+      project)))
 
 (defun phi-visit-parent-note ()
   "Visit the parent note"
@@ -408,7 +419,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-sidebar-with-parent ()
   "Open PHI Sidebar with parent note"
   (interactive)
-  (phi-sidebar-create-window (or (phi-get-parent-note-id) phi-master-note-id)))
+  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) phi-master-note-id)))
 
 (defun phi-toggle-sidebar ()
   "Toggle visibility of PHI Sidebar"
