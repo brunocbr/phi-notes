@@ -474,6 +474,16 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (with-current-buffer (current-buffer)
       (insert wikilink))))
 
+(defun helm-phi-insert-title-and-link-action (candidate)
+    (string-match (concat "^\\(" phi-id-regex "\\)\t+\\(.*\\)") candidate)
+    (let* (
+           (id (match-string-no-properties 1 candidate))
+           (title (match-string-no-properties 2 candidate))
+           (wikilink (concat phi-link-left-bracket-symbol
+                             id phi-link-right-bracket-symbol)))
+      (with-current-buffer (current-buffer)
+        (insert (concat title " " wikilink)))))
+
 (defun helm-phi-formatter (candidate)
   (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
                     candidate)
@@ -496,7 +506,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm :sources (helm-build-in-buffer-source "PHI Deft" :data 'deft-find-all-files-no-prefix
                                               :candidate-transformer 'helm-phi-candidates-transformer
                                               :action (helm-make-actions "Insert link"
-                                                                         'helm-phi-insert-link-action))
+                                                                         'helm-phi-insert-link-action
+                                                                         "Insert title & link"
+                                                                         'helm-phi-insert-title-and-link-action))
         :buffer "*helm phi notes"))
 
 
