@@ -227,9 +227,9 @@ tags:	 	%s
 (defun phi-get-linked-project-note-id ()
   "Return the id for the project this note is linked to"
   (let ((project (phi-get-note-field-contents phi-project-field)))
-    (if (string-match (concat phi-link-left-bracket-symbol-re "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) project)
+    (if (and project (string-match (concat phi-link-left-bracket-symbol-re "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) project))
         (match-string-no-properties 1 project)
-      project)))
+      (or project nil))))
 
 (defun phi-visit-parent-note ()
   "Visit the parent note"
