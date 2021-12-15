@@ -417,7 +417,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                            (list '(window-parameters (no-delete-other-windows . t)))))))
 
 (defun phi-sidebar-with-parent ()
-  "Open PHI Sidebar with parent note"
+  "Open PHI Sidebar with linked project, parent or master note"
   (interactive)
   (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) phi-master-note-id)))
 
