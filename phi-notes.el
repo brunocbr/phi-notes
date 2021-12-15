@@ -463,6 +463,42 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (switch-to-buffer buffer)
       (pop-to-buffer buffer))))
 
+;; helm-deft-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun helm-phi-insert-link-action (candidate)
+  (string-match (concat "^\\(" phi-id-regex "\\)") candidate)
+  (let* (
+         (id (match-string-no-properties 1 candidate))
+         (wikilink (concat phi-link-left-bracket-symbol
+                           id phi-link-right-bracket-symbol)))
+    (with-current-buffer (current-buffer)
+      (insert wikilink))))
+
+(defun helm-phi-formatter (candidate)
+  (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
+                    candidate)
+      (let* ((id (match-string-no-properties 1 candidate))
+             (title (match-string-no-properties 2 candidate)))
+        (if title
+            (concat id "\t\t\t\t\t\t" title)))
+      candidate))
+
+(defun helm-phi-candidates-transformer (candidates)
+  "Format CANDIDATES for display in helm."
+  (cl-loop
+   for entry in candidates
+   collect (helm-phi-formatter entry)))
+
+(defun helm-phi-find ()
+  (require 'deft)
+  (require 'helm-source)
+  (interactive)
+  (helm :sources (helm-build-in-buffer-source "PHI Deft" :data 'deft-find-all-files-no-prefix
+                                              :candidate-transformer 'helm-phi-candidates-transformer
+                                              :action (helm-make-actions "Insert link"
+                                                                         'helm-phi-insert-link-action))
+        :buffer "*helm phi notes"))
+
 
 ;; phi-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
