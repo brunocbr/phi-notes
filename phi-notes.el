@@ -204,6 +204,10 @@ tags:	 	%s
               parent phi-link-right-bracket-symbol)
     (concat phi-originating-symbol)))
 
+(defun phi-id-to-wikilink (id)
+  "Return a wikilink for the given `id'"
+  (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
+
 (defun phi-get-current-note-id ()
   "Get the current note id"
   (interactive)
@@ -527,11 +531,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-insert-and-assign-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
   (let* ((id (match-string-no-properties 1 candidate))
-         (project-id (phi-get-current-note-id))
+         (this-id (phi-get-current-note-id))
          (buffer (find-file-noselect (phi-matching-file-name id))))
     (with-current-buffer buffer
-      ;; @todo append to project list
-      (phi-set-note-field-contents phi-project-field (concat phi-link-left-bracket-symbol project-id phi-link-right-bracket-symbol))))
+        (let* ((current-projects (phi-get-note-field-contents phi-project-field))
+               (project-link (if current-projects ;; preppend to existing project list, if needed
+                               (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
+        (phi-set-note-field-contents phi-project-field project-link))))
   (helm-phi-insert-title-and-link-action candidate))
 
 (defun helm-phi-formatter (candidate)
