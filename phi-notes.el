@@ -268,6 +268,30 @@ tags:	 	%s
               (looking-at (concat ".*$")))
         (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0)))))
 
+(defun phi-set-note-field-contents (field value)
+  "Insert or update a field in the note's YAML frontmatter."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
+    (if (looking-at-p "---") (forward-line 1) (error "No YAML frontmatter found"))
+    (let ((target-pos (point))
+          (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+      ;; Return after search-forward moved point.
+      (goto-char target-pos)
+      (if (not yaml-end-pos)
+          (error "YAML block end boundary not found")
+        ;; If YAML block is found, update or insert the date entry
+        (progn
+          (if (search-forward-regexp (concat "^" field ":") yaml-end-pos t)
+              (delete-region (line-beginning-position) (line-end-position))
+            (progn
+              (goto-char yaml-end-pos)
+              (beginning-of-line)
+              (newline)
+              (backward-char)))
+          (insert (format "%s:\t\t%s" field value)))))))
+
 (defun phi-create-common-note (id title &optional parent tags citekey loc body)
   "Create a common note buffer"
   (interactive)
@@ -476,8 +500,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 ;; helm-deft-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun helm-phi--extract-id-from-cadidate-re ()
+  (concat "^\\(" phi-id-regex "\\)\t+\\(.*\\)"))
+
 (defun helm-phi-insert-link-action (candidate)
-  (string-match (concat "^\\(" phi-id-regex "\\)") candidate)
+  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
   (let* (
          (id (match-string-no-properties 1 candidate))
          (wikilink (concat phi-link-left-bracket-symbol
@@ -485,8 +512,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (with-current-buffer (current-buffer)
       (insert wikilink))))
 
+
+
 (defun helm-phi-insert-title-and-link-action (candidate)
-    (string-match (concat "^\\(" phi-id-regex "\\)\t+\\(.*\\)") candidate)
+  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
     (let* (
            (id (match-string-no-properties 1 candidate))
            (title (match-string-no-properties 2 candidate))
@@ -494,6 +523,16 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                              id phi-link-right-bracket-symbol)))
       (with-current-buffer (current-buffer)
         (insert (concat title " " wikilink)))))
+
+(defun helm-phi-insert-and-assign-action (candidate)
+  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
+  (let* ((id (match-string-no-properties 1 candidate))
+         (project-id (phi-get-current-note-id))
+         (buffer (find-file-noselect (phi-matching-file-name id))))
+    (with-current-buffer buffer
+      ;; @todo append to project list
+      (phi-set-note-field-contents phi-project-field (concat phi-link-left-bracket-symbol project-id phi-link-right-bracket-symbol))))
+  (helm-phi-insert-title-and-link-action candidate))
 
 (defun helm-phi-formatter (candidate)
   (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
@@ -514,12 +553,15 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (require 'deft)
   (require 'helm-source)
   (interactive)
-  (helm :sources (helm-build-in-buffer-source "PHI Deft" :data 'deft-find-all-files-no-prefix
-                                              :candidate-transformer 'helm-phi-candidates-transformer
-                                              :action (helm-make-actions "Insert link"
-                                                                         'helm-phi-insert-link-action
-                                                                         "Insert title & link"
-                                                                         'helm-phi-insert-title-and-link-action))
+  (helm :sources (helm-build-in-buffer-source "PHI Deft"
+                   :data 'deft-find-all-files-no-prefix
+                   :candidate-transformer 'helm-phi-candidates-transformer
+                   :action (helm-make-actions "Insert link"
+                                              'helm-phi-insert-link-action
+                                              "Insert title & link"
+                                              'helm-phi-insert-title-and-link-action
+                                              "Insert & assign to this project"
+                                              'helm-phi-insert-and-assign-action))
         :buffer "*helm phi notes"))
 
 
