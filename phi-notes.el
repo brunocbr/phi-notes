@@ -576,7 +576,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
-    (define-key map (kbd "C-c f") #'helm-phi-find)
+    (define-key map (kbd "C-c i") #'helm-phi-find)
     map)
   "Main mode map for `phi-mode'.")
 
