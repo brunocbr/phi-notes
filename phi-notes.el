@@ -118,6 +118,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-origin-field "origin"
+  "Field in YAML header for the URL callback of for an externally maintained source."
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-breadcrumb t
   "Create breadcrumbs"
   :type 'boolean
@@ -586,10 +591,17 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     map)
   "Main mode map for `phi-mode'.")
 
+(defun phi-mode-check-external-origin ()
+  "Verify if origin field is set and make buffer read only in this case."
+  (when (phi-get-note-field-contents phi-origin-field)
+    (setq buffer-read-only t)))
+
 (define-minor-mode phi-mode
   "PHI note minor mode"
   :lighter phi-mode-lighter
   :keymap phi-mode-map
   )
+
+(add-hook 'phi-mode-hook 'phi-mode-check-external-origin)
 
 (provide 'phi-notes)
