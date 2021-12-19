@@ -566,6 +566,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 
 (defun helm-ag-phi-find-backlinks ()
+  (interactive)
   (helm-do-phi-ag (concat
                    phi-link-left-bracket-symbol-re (phi-get-current-note-id) phi-link-right-bracket-symbol-re)))
 
