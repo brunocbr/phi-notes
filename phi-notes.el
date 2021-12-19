@@ -560,12 +560,18 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    for entry in candidates
    collect (helm-phi-formatter entry)))
 
-(defun helm-ag-phi-find-backlinks ()
+(defun helm-do-phi-ag (input)
   (require 'helm-ag)
+  (helm-do-ag phi-notes-path nil input))
+
+
+(defun helm-ag-phi-find-backlinks ()
+  (helm-do-phi-ag (concat
+                   phi-link-left-bracket-symbol-re (phi-get-current-note-id) phi-link-right-bracket-symbol-re)))
+
+(defun helm-ag-phi-find-like-tags ()
   (interactive)
-  (helm-do-ag phi-notes-path
-              nil
-              (concat phi-link-left-bracket-symbol-re (phi-get-current-note-id) phi-link-right-bracket-symbol-re)))
+  (helm-do-phi-ag (phi-get-note-field-contents phi-tags-field)))
 
 (defun helm-phi-find ()
   (require 'deft)
@@ -596,6 +602,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
     (define-key map (kbd "C-c i") #'helm-phi-find)
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
+    (define-key map (kbd "C-c f t") #'helm-ag-phi-find-like-tags)
     map)
   "Main mode map for `phi-mode'.")
 
