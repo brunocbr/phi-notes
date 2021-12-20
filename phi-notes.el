@@ -512,18 +512,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi--extract-id-from-cadidate-re ()
   (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)"))
 
-(defun helm-phi-insert-link-action (candidate)
-  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
-  (let* (
-         (id (match-string-no-properties 1 candidate))
-         (wikilink (concat phi-link-left-bracket-symbol
-                           id phi-link-right-bracket-symbol)))
-    (with-current-buffer (current-buffer)
-      (insert wikilink))))
+(defun helm-phi--get-file-name (candidate)
+  (let* ((file-line (helm-grep-split-line candidate))
+         (filename (if file-line (cl-first file-line) candidate)))))
 
 (defun helm-ag-phi-insert-link-action (candidate)
-  (let* ((file-line (helm-grep-split-line candidate))
-         (filename (cl-first file-line)))
+  (let ((filename (helm-phi--get-file-name candidate)))
     (string-match (helm-phi--extract-id-from-cadidate-re) filename)
     (let* ((id (match-string-no-properties 1 filename))
            (wikilink (concat phi-link-left-bracket-symbol
@@ -533,8 +527,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi-insert-title-and-link-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
-    (let* (
-           (id (match-string-no-properties 1 candidate))
+    (let* ((id (match-string-no-properties 1 candidate))
            (title (match-string-no-properties 2 candidate))
            (wikilink (concat phi-link-left-bracket-symbol
                              id phi-link-right-bracket-symbol)))
@@ -609,7 +602,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                    :action (helm-make-actions "Open note"
                                               'helm-phi-find-note-action
                                               "Insert link to note"
-                                              'helm-phi-insert-link-action
+                                              'helm-ag-phi-insert-link-action
                                               "Insert title & link"
                                               'helm-phi-insert-title-and-link-action
                                               "Insert & assign to this project"
