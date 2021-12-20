@@ -553,8 +553,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (phi-set-note-field-contents phi-project-field project-link))))
   (helm-phi-insert-title-and-link-action candidate))
 
-(defun helm-phi-source-data ()
-  (directory-files (expand-file-name phi-notes-path) nil (concat phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t))
+(defun helm-phi-source-data-sorted ()
+  (mapcar #'car
+          (sort (directory-files-and-attributes (expand-file-name phi-notes-path)
+                                                nil (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
+                #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
+
 
 (defun helm-phi-formatter (candidate)
   (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
@@ -598,7 +602,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (require 'helm-source)
   (interactive)
   (helm :sources (helm-build-in-buffer-source "PHI Notes"
-                   :data 'helm-phi-source-data
+                   :data 'helm-phi-source-data-sorted
                    :candidate-transformer 'helm-phi-candidates-transformer
                    :action (helm-make-actions "Insert link"
                                               'helm-phi-insert-link-action
