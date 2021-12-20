@@ -73,7 +73,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-counter-file ".phi_counter"
+(defcustom phi-counter-file ".counter"
   "Path for counter file"
   :type 'string
   :group 'phi)
