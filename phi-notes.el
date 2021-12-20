@@ -514,7 +514,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi--get-file-name (candidate)
   (let* ((file-line (helm-grep-split-line candidate))
-         (filename (if file-line (cl-first file-line) candidate)))))
+         (filename (if file-line (cl-first file-line) candidate)))
+    filename))
 
 (defun helm-ag-phi-insert-link-action (candidate)
   (let ((filename (helm-phi--get-file-name candidate)))
