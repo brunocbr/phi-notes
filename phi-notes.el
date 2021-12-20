@@ -68,7 +68,7 @@ tags:	 	%s
   :group 'phi)
 
 
-(defcustom phi-notes-path "~/phi"
+(defcustom phi-default-notes-path "~/phi"
   "Path for note files"
   :type 'string
   :group 'phi)
@@ -190,10 +190,16 @@ tags:	 	%s
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun phi-notes-path ()
+  "Get the path for notes (usually the default directory)"
+  (if (file-exists-p phi-counter-file)
+      default-directory
+    phi-default-notes-path))
+
 (defun phi-get-counter ()
   "Increment and return current counter"
   (let ((counter)
-        (phi-counter-path (concat phi-notes-path "/" phi-counter-file)))
+        (phi-counter-path (concat (phi-notes-path) "/" phi-counter-file)))
     (with-temp-buffer
       (insert-file-contents phi-counter-path)
       (setq counter (format phi-id-format (1+ (string-to-number (buffer-string))))))
@@ -222,7 +228,7 @@ tags:	 	%s
 
 (defun phi-matching-file-name (id)
   "Return the first match of a file name starting with id"
-  (nth 0 (file-name-all-completions id ""))) ;; blank for current dir instead of phi-notes-path
+  (nth 0 (file-name-all-completions id (phi-notes-path)))) ;; blank for current dir instead of phi-notes-path
 
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
@@ -316,7 +322,7 @@ tags:	 	%s
 
 ")
     (when body (insert body))
-    (write-file (concat phi-notes-path "/" id " " title "." phi-default-file-extension))
+    (write-file (concat (phi-notes-path) "/" id " " title "." phi-default-file-extension))
     (phi-mode)
     (current-buffer)))
 
@@ -553,7 +559,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi-source-data-sorted ()
   (mapcar #'car
-          (sort (directory-files-and-attributes (expand-file-name phi-notes-path)
+          (sort (directory-files-and-attributes (expand-file-name (phi-notes-path))
                                                 nil (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
                 #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
 
@@ -573,7 +579,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-do-phi-ag (input)
   (require 'helm-ag)
-  (helm-ag--do-ag-set-source phi-notes-path)
+  (helm-ag--do-ag-set-source (phi-notes-path))
   (helm-add-action-to-source "Insert wikilink"
                              #'helm-ag-phi-insert-link-action
                              helm-source-do-ag)
