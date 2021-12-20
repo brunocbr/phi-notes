@@ -510,7 +510,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 ;; helm-deft-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun helm-phi--extract-id-from-cadidate-re ()
-  (concat "^\\(" phi-id-regex "\\)\t+\\(.*\\)"))
+  (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)"))
 
 (defun helm-phi-insert-link-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
@@ -521,7 +521,15 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (with-current-buffer (current-buffer)
       (insert wikilink))))
 
-
+(defun helm-ag-phi-insert-link-action (candidate)
+  (let* ((file-line (helm-grep-split-line candidate))
+         (filename (cl-first file-line)))
+    (string-match (helm-phi--extract-id-from-cadidate-re) filename)
+    (let* ((id (match-string-no-properties 1 filename))
+           (wikilink (concat phi-link-left-bracket-symbol
+                             id phi-link-right-bracket-symbol)))
+      (with-current-buffer (current-buffer)
+        (insert wikilink)))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
@@ -545,6 +553,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (phi-set-note-field-contents phi-project-field project-link))))
   (helm-phi-insert-title-and-link-action candidate))
 
+(defun helm-phi-source-data ()
+  (directory-files (expand-file-name phi-notes-path) nil (concat phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t))
+
 (defun helm-phi-formatter (candidate)
   (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
                     candidate)
@@ -562,8 +573,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-do-phi-ag (input)
   (require 'helm-ag)
-  (helm-do-ag phi-notes-path nil input))
-
+  (helm-ag--do-ag-set-source phi-notes-path)
+  (helm-add-action-to-source "Insert wikilink"
+                             #'helm-ag-phi-insert-link-action
+                             helm-source-do-ag)
+  (helm :sources 'helm-source-do-ag :buffer "*helm-ag-phi*" :keymap helm-do-ag-map
+        :input input
+        :history 'helm-ag--helm-history))
 
 (defun helm-ag-phi-find-backlinks ()
   (interactive)
@@ -574,12 +590,15 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (interactive)
   (helm-do-phi-ag (phi-get-note-field-contents phi-tags-field)))
 
+(defun helm-ag-phi-find ()
+  (interactive)
+  (helm-do-phi-ag nil))
+
 (defun helm-phi-find ()
-  (require 'deft)
   (require 'helm-source)
   (interactive)
-  (helm :sources (helm-build-in-buffer-source "PHI Deft"
-                   :data 'deft-find-all-files-no-prefix
+  (helm :sources (helm-build-in-buffer-source "PHI Notes"
+                   :data 'helm-phi-source-data
                    :candidate-transformer 'helm-phi-candidates-transformer
                    :action (helm-make-actions "Insert link"
                                               'helm-phi-insert-link-action
@@ -604,6 +623,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c i") #'helm-phi-find)
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
     (define-key map (kbd "C-c f t") #'helm-ag-phi-find-like-tags)
+    (define-key map (kbd "C-c f f") #'helm-ag-phi-find)
     map)
   "Main mode map for `phi-mode'.")
 
