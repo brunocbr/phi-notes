@@ -553,6 +553,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (phi-set-note-field-contents phi-project-field project-link))))
   (helm-phi-insert-title-and-link-action candidate))
 
+(defun helm-phi-find-note-action (candidate)
+  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
+  (switch-to-buffer (find-file-noselect (phi-matching-file-name (match-string-no-properties 1 candidate)))))
+
 (defun helm-phi-source-data-sorted ()
   (mapcar #'car
           (sort (directory-files-and-attributes (expand-file-name phi-notes-path)
@@ -561,13 +565,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 
 (defun helm-phi-formatter (candidate)
-  (if (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
-                    candidate)
-      (let* ((id (match-string-no-properties 1 candidate))
-             (title (match-string-no-properties 2 candidate)))
-        (if title
-            (concat id "\t\t\t\t\t\t" title)))
-      candidate))
+  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
+                      candidate)
+    (format "%s %s"
+            (propertize (match-string 1 candidate) 'face 'helm-grep-lineno)
+            (propertize (match-string 2 candidate) 'face 'helm-moccur-buffer))))
 
 (defun helm-phi-candidates-transformer (candidates)
   "Format CANDIDATES for display in helm."
@@ -604,7 +606,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm :sources (helm-build-in-buffer-source "PHI Notes"
                    :data 'helm-phi-source-data-sorted
                    :candidate-transformer 'helm-phi-candidates-transformer
-                   :action (helm-make-actions "Insert link"
+                   :action (helm-make-actions "Open note"
+                                              'helm-phi-find-note-action
+                                              "Insert link to note"
                                               'helm-phi-insert-link-action
                                               "Insert title & link"
                                               'helm-phi-insert-title-and-link-action
