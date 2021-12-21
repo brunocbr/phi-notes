@@ -69,11 +69,12 @@ tags:	 	%s
 
 
 (defcustom phi-repository-alist
-  '(("phi" "~/phi")
-    ("alpha" "~/alpha"))
+  '(("phi" "~/phi" "0000")
+    ("alpha" "~/alpha" "7000"))
   "Note repositories (\"NAME\" \"PATH\") ..."
   :type '(alist :key-type (symbol :tag "Name")
-                :value-type (list (string :tag "Path")))
+                :value-type (list (string :tag "Path")
+                                  (string :tag "Master note")))
   :group 'phi)
 
 (defcustom phi-default-notes-path "~/phi"
@@ -86,7 +87,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-master-note-id "0000"
+(defcustom phi-default-master-note-id "0000"
   "Default note for the sidebar when no ancestor is found"
   :type 'string
   :group 'phi)
@@ -468,10 +469,19 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (when phi-sidebar-persistent-window
                                            (list '(window-parameters (no-delete-other-windows . t)))))))
 
+(defun phi--master-note-id ()
+  "Get the master note for the current repository"
+  (let ((custom-master-note
+         (cdr (assoc (expand-file-name (directory-file-name default-directory))
+                     (mapcar (lambda (x) (cons (expand-file-name (directory-file-name (cadr x))) (nth 2 x))) phi-repository-alist)))))
+    (if custom-master-note
+        custom-master-note
+      phi-default-master-note-id)))
+
 (defun phi-sidebar-with-parent ()
   "Open PHI Sidebar with linked project, parent or master note"
   (interactive)
-  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) phi-master-note-id)))
+  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) (phi--master-note-id))))
 
 (defun phi-toggle-sidebar ()
   "Toggle visibility of PHI Sidebar"
