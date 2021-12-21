@@ -68,8 +68,16 @@ tags:	 	%s
   :group 'phi)
 
 
+(defcustom phi-repository-alist
+  '(("phi" "~/phi")
+    ("alpha" "~/alpha"))
+  "Note repositories (\"NAME\" \"PATH\") ..."
+  :type '(alist :key-type (symbol :tag "Name")
+                :value-type (list (string :tag "Path")))
+  :group 'phi)
+
 (defcustom phi-default-notes-path "~/phi"
-  "Path for note files"
+  "Path for note files, DEPRECATED"
   :type 'string
   :group 'phi)
 
@@ -78,7 +86,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-master-note-id "0000"
+(defcustom phi-master-note-id "ø"
   "Default note for the sidebar when no ancestor is found"
   :type 'string
   :group 'phi)
@@ -190,11 +198,16 @@ tags:	 	%s
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun phi--prompt-for-notes-path ()
+  (cadr (assoc (completing-read "Select a note repository: "
+                                 phi-repository-alist) phi-repository-alist)))
+
 (defun phi-notes-path ()
   "Get the path for notes (usually the default directory)"
   (if (file-exists-p phi-counter-file)
       default-directory
-    phi-default-notes-path))
+    ;; phi-default-notes-path
+    (phi--prompt-for-notes-path)))
 
 (defun phi-get-counter ()
   "Increment and return current counter"
@@ -360,8 +373,8 @@ tags:	 	%s
 (defun phi-new-originating-note ()
   "Create an originating note. `C-u' to create note in other window."
   (interactive)
-  (phi-new-common-note nil "")
-  )
+  (setq default-directory (phi--prompt-for-notes-path))
+  (phi-new-common-note nil ""))
 
 (defun phi-new-descendant-note ()
   "Create a child linked note. `C-u' to create note in other window."
