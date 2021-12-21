@@ -86,7 +86,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-master-note-id "ø"
+(defcustom phi-master-note-id "0000"
   "Default note for the sidebar when no ancestor is found"
   :type 'string
   :group 'phi)
