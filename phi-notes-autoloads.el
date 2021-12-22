@@ -3,12 +3,17 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "phi-notes" "phi-notes.el" (25027 25919 565652
-;;;;;;  886000))
+;;;### (autoloads nil "phi-notes" "phi-notes.el" (25027 41955 427053
+;;;;;;  113000))
 ;;; Generated autoloads from phi-notes.el
 
 (autoload 'phi-initialize-counter "phi-notes" "\
-Prompts for directory and value, and create a counter" t nil)
+Prompts for directory and value, and create a counter
+
+\(fn &optional DIR VALUE)" t nil)
+
+(autoload 'phi-add-repository "phi-notes" "\
+Helper function for intializing a repository and customizing `phi-repository-alist'" t nil)
 
 (autoload 'phi-visit-parent-note "phi-notes" "\
 Visit the parent note" t nil)
