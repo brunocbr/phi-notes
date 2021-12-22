@@ -1,6 +1,21 @@
 # phi-notes
  
- PHI notes emacs package
+This emacs package provides a `phi-mode` minor-mode for a Zettelkasten-style notetaking system with the following characteristics:
+
+- Notes are identified by unique, sequential numbers (`0001`, `0002` etc.).
+- Notes may be linked using the wikilink syntax (`[[0001]]`).
+- Notes may have "parent" and "descendant" notes; they may also be linked to project notes.
+- Bibliographical annotation is supported with appropriate BibTeX references.
+- Notes may have tags (identified by `#hashtags`).
+- Notes have a YAML(ish) frontmatter to keep metadata and are (preferrably, but not necessarily) written in Markdown.
+
+The aim of this project is to develop features to ease the creation, navegation and linking of notes in one or multiple note repositories. 
+
+A sidebar functionality makes the minor-mode particularly useful for working with structure notes:
+
+![DEMO](demo/phi-notes-demo.gif)
+
+Recomended usage with `olivetti-mode`, `helm` and `helm-ag`.
 
 ## Setup
 
@@ -45,7 +60,7 @@ Open your `.spacemacs` configuration (`M-m f e d`) and add `phi` to `dotspacemac
 
 ### Configure your note repository
 
-A `.counter` file is kept in the same directory of your notes in order to keep the value of the incremental counter used for generating note ids (`0001`, `0002` etc.). To initialize it, use the interactive function `M-x phi-initialize-counter`, which will prompt for the desired note directory.
+A `.counter` file is kept in the same directory of your notes in order to keep the value of the incremental counter used for generating note ids. To initialize it, use the interactive function `M-x phi-initialize-counter`, which will prompt for the desired note directory.
 
 You may then configure one or multiple repositories with `customize-variable phi-repository-alist`. The list will contain elements consisting in a name of the repository, a corresponding directory and an optional value for the "master note" id (which is the default note displayed in the sidebar in absence of a project or parent note). This setup is also needed for the creation of independent, originating notes (`M-m C o` if you used the configuration above), when it makes sense to prompt for a location to create them. All the other functionalities are sensitive to the context of the file currently being visited.
 
