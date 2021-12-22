@@ -15,7 +15,7 @@ A sidebar functionality makes the minor-mode particularly useful for working wit
 
 ![DEMO](demo/phi-notes-demo.gif)
 
-Recomended usage with `olivetti-mode`, `helm` and `helm-ag` and `helm-bibtex`.
+Recomended usage with `olivetti-mode`, `helm`, `helm-ag` and `helm-bibtex`.
 
 ## Setup
 
