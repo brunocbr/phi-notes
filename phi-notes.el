@@ -651,6 +651,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         :buffer "*helm phi notes"))
 
 
+(defun helm-phi-open-repo ()
+  "Prompt for a repository and call `helm-phi-find`."
+  (interactive)
+  (setq default-directory (phi--prompt-for-notes-path))
+  (helm-phi-find))
+
 ;; phi-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar phi-mode-map
