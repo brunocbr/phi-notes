@@ -77,11 +77,6 @@ tags:	 	%s
                                   (string :tag "Master note id")))
   :group 'phi)
 
-(defcustom phi-default-notes-path "~/phi"
-  "Path for note files, DEPRECATED"
-  :type 'string
-  :group 'phi)
-
 (defcustom phi-counter-file ".counter"
   "Path for counter file"
   :type 'string
@@ -215,7 +210,6 @@ tags:	 	%s
   "Get the path for notes (usually the default directory)"
   (if (file-exists-p phi-counter-file)
       default-directory
-    ;; phi-default-notes-path
     (phi--prompt-for-notes-path)))
 
 (defun phi-get-counter ()
