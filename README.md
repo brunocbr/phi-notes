@@ -101,7 +101,7 @@ And, just below it, separated by an empty line, a breadcrumb with symbols, follo
 △[[7012]]
 ```
 
-The symbols may be customized. `title` and `id` fields and really redundant; the package will always extract this information from the actual filename.
+The symbols may be customized. `title` and `id` fields and simply redundant; the package will always extract this information from the actual filename.
  
 The frontmatter may also contain other fields (see below), depending on the kind of the note.
 
