@@ -154,7 +154,7 @@ tags:		#plato #ƒ
 ...
 ```
 
-The above kind of note can be quickly created out of bibliographical information already stored in the BibTeX base by means of the `helm-bibtex` action to `Create PHI bibliographical annotation`.
+The above kind of note can be quickly created out of bibliographical information already stored in the BibTeX base by means of the `helm-bibtex` action `Create PHI bibliographical annotation`.
 
 Descendant notes (created with `C-c n d`) will carry the bibliographical information by default.
 
