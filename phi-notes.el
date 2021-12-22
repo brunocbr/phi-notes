@@ -199,6 +199,15 @@ tags:	 	%s
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun phi-initialize-counter ()
+  "Prompts for directory and value, and create a counter"
+  (interactive)
+  (let ((default-directory (read-directory-name "Select the directory where to create or reset the counter: "
+                                                default-directory))
+        (counter (read-string "Value: " "0000"))))
+    (with-temp-file phi-counter-file
+      (insert counter)))
+
 (defun phi--prompt-for-notes-path ()
   (if (equal (length phi-repository-alist) 1)
       (cadr (car phi-repository-alist))
