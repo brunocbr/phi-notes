@@ -72,7 +72,7 @@ Creating notes:
 | `C-c n y`                       | `phi-yank-to-new-note`. If you have previously killed a region, you may use this command (e. g. when visiting a structure note) to create a link to a new note which will have the contents "yanked" to it. The command will prompt for a title which will be by default extracted from the first line of the killed region, eliminating `#`s if needed.  This is useful for reorganizing contents in different notes. |
 | `C-c n k`                       | `phi-kill-to-new-note`. Similar to the above, but may be used immediately after marking a region, which will be thus substituted with a link to a new note containing the "killed" contents. May be used e. g. when breaking a long note into more atomical ones.                                                                                                                        |
 
-You may also create [bibliographical annotation notes](#bibnotes) from `helm-bibtex` (bound to `C-c )`); see below.
+You may also create [bibliographical annotation notes](#bibliographical-annotation) from `helm-bibtex` (bound to `C-c )`); see below.
 
 Searching and inserting links to other notes:
 
@@ -105,7 +105,7 @@ The symbols may be customized. `title` and `id` fields and really redundant; the
  
 The frontmatter may also contain other fields (see below), depending on the kind of the note.
 
-### Bibliographical annotation {#bibnotes}
+### Bibliographical annotation
 
 The fields `citekey` and `loc` in the frontmatter are used for bibliographical annotation notes. They link a corresponding BibTeX reference and location in the work (most often a page interval). A tag (`#ƒ`) is also used to identify this kind of note (in distinction to "idea" notes which are my own).
 
