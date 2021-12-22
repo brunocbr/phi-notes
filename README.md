@@ -90,7 +90,7 @@ A `PHI` contains in its first lines a YAML(ish) frontmatter, which is typically 
 ```yaml
 ---
 title:		'alists'  
-id:			Φ7013  
+id:	   	Φ7013  
 tags:	 	#emacs #lisp
 ...
 ```
@@ -114,7 +114,7 @@ It's very typical to have a structure note (with `loc` = 0) as an index pointing
 ```yaml
 ---
 title:		'Diès, A. (1932) La définition de l‘Être et la nature des idées dans le Sophiste de Platon'   
-id:			Φ2105  
+id:		Φ2105  
 citekey:	Dies1932  
 loc:		0   
 tags:		#plato #ƒ
