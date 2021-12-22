@@ -71,10 +71,10 @@ tags:	 	%s
 (defcustom phi-repository-alist
   '(("phi" "~/phi" "0000")
     ("alpha" "~/alpha" "7000"))
-  "Note repositories (\"NAME\" \"PATH\") ..."
+  "Note repositories (\"NAME\" \"PATH\" \"MASTERID\") ..."
   :type '(alist :key-type (symbol :tag "Name")
                 :value-type (list (string :tag "Path")
-                                  (string :tag "Master note")))
+                                  (string :tag "Master note id")))
   :group 'phi)
 
 (defcustom phi-default-notes-path "~/phi"
