@@ -70,15 +70,22 @@ You may then configure one or multiple repositories with `customize-variable phi
 
 ### Key bindings
 
+Open a repository:
+
+
+| Key binding                            | Description                                                                        |
+| -----------                            | -----------                                                                        |
+| `M-x a z` (or other global keybinding) | `helm-phi-open-repo`. Search notes titles (`heml` actions may be used, see below). |
+|                                        |                                                                                    |
+
 Navigation:
 
-| Key binding                            | Description                                                                                                                            |   |
-| -----------                            | -----------                                                                                                                            |   |
-| `M-x a z` (or other global keybinding) | `helm-phi-open-repo`. Search notes titles (`heml` actions may be used, see below).                                                                               |
-| `C-c ;`                                | Toggle the sidebar. It will show one of the following notes: a project note, the parent note, or the "master note" for the repository. |   |
-| `C-c :`                                | Show the sidebar and give it focus.                                                                                                    |   |
-| `C-c u`                                | Visit parent note.                                                                                                                     |   |
-| `C-c j`                                | Visit the next link to the right.                                                                                                      |   |
+| Key binding | Description                                                                                                                            |
+| ----------- | -----------                                                                                                                            |
+| `C-c ;`     | Toggle the sidebar. It will show one of the following notes: a project note, the parent note, or the "master note" for the repository. |
+| `C-c :`     | Show the sidebar and give it focus.                                                                                                    |
+| `C-c u`     | Visit parent note.                                                                                                                     |
+| `C-c j`     | Visit the next link to the right.                                                                                                      |
 
 Creating notes:
 
@@ -100,7 +107,7 @@ Searching and inserting links to other notes:
 | `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links poiting to the current one.                                                                                                                                          |
 | `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
 
-With the `helm` and `helm-ag` commands the following actions are available:
+With the `helm` and `helm-ag` command the following actions are available:
 
 - Open the note;
 - Insert (in the current buffer) a wikilink to the selected note;
