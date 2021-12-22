@@ -176,7 +176,7 @@ proj:	[[7000]]
 | `loc`     | The location (usually a page interval) in the associated bibliographical reference.                           |
 | `tags`    | A sequence of hash tags separated by spaces.                                                                  |
 | `proj`    | A sequence of wikilinks to the project(s) the note is assigned to.                                            |
-| `origin`  | A callback URL to open the source for the note, when it is created and maintained in an external application. |
+| `origin`  | A callback URL to open the source for the note, when it is created and maintained in an external application. `phi-mode` will turn the buffer read-only when this field is detected. |
 
 
 
