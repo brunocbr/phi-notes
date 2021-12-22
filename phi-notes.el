@@ -142,7 +142,6 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-
 (defcustom phi-link-right-bracket-symbol "]]"
   "Symbol for right bracket"
   :type 'string
@@ -153,13 +152,10 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-
 (defcustom phi-link-right-bracket-symbol-re "\\]\\]"
   "RegEx for right bracket"
   :type 'string
   :group 'phi)
-
-
 
 (defcustom phi-id-regex "[0-9]\\{4,\\}"
   "Regular expression for valid note id"
@@ -199,6 +195,7 @@ tags:	 	%s
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;###autoload
 (defun phi-initialize-counter ()
   "Prompts for directory and value, and create a counter"
   (interactive)
@@ -271,6 +268,7 @@ tags:	 	%s
         (match-string-no-properties 1 project)
       (or project nil))))
 
+;;;###autoload
 (defun phi-visit-parent-note ()
   "Visit the parent note"
   (interactive)
@@ -287,6 +285,7 @@ tags:	 	%s
                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re))
         (match-string-no-properties 1))))
 
+;;;###autoload
 (defun phi-visit-next-link ()
   "Visit the next linked note. `C-u' to visit note in other window."
   (interactive)
@@ -382,17 +381,20 @@ tags:	 	%s
         (pop-to-buffer buffer)
         (select-window w))))
 
+;;;###autoload
 (defun phi-new-originating-note ()
   "Create an originating note. `C-u' to create note in other window."
   (interactive)
   (setq default-directory (phi--prompt-for-notes-path))
   (phi-new-common-note nil ""))
 
+;;;###autoload
 (defun phi-new-descendant-note ()
   "Create a child linked note. `C-u' to create note in other window."
   (interactive)
   (phi-new-common-note))
 
+;;;###autoload
 (defun phi-kill-to-new-note (start end)
   "Kill region to linked note. `C-u' to create note in other window."
   (interactive "r")
@@ -402,6 +404,7 @@ tags:	 	%s
     (with-current-buffer buffer
       (kill-region start end))))
 
+;;;###autoload
 (defun phi-yank-to-new-note ()
   "Yank to linked note. `C-u' to create note in other window."
   (interactive)
@@ -494,6 +497,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (interactive)
   (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) (phi--master-note-id))))
 
+;;;###autoload
 (defun phi-toggle-sidebar ()
   "Toggle visibility of PHI Sidebar"
   (interactive)
@@ -502,6 +506,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
            (setq phi-sidebar-buffer nil))
     (phi-sidebar-with-parent)))
 
+;;;###autoload
 (defun phi-focus-sidebar ()
   "Focus on PHI Sidebar"
   (interactive)
@@ -621,19 +626,23 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         :input input
         :history 'helm-ag--helm-history))
 
+;;;###autoload
 (defun helm-ag-phi-find-backlinks ()
   (interactive)
   (helm-do-phi-ag (concat
                    phi-link-left-bracket-symbol-re (phi-get-current-note-id) phi-link-right-bracket-symbol-re)))
 
+;;;###autoload
 (defun helm-ag-phi-find-like-tags ()
   (interactive)
   (helm-do-phi-ag (phi-get-note-field-contents phi-tags-field)))
 
+;;;###autoload
 (defun helm-ag-phi-find ()
   (interactive)
   (helm-do-phi-ag nil))
 
+;;;###autoload
 (defun helm-phi-find ()
   (require 'helm-source)
   (interactive)
@@ -651,6 +660,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         :buffer "*helm phi notes"))
 
 
+;;;###autoload
 (defun helm-phi-open-repo ()
   "Prompt for a repository and call `helm-phi-find`."
   (interactive)

@@ -5,7 +5,7 @@ This emacs package provides a `phi-mode` minor-mode for a Zettelkasten-style not
 - Notes are identified by unique, sequential numbers (`0001`, `0002` etc.).
 - Notes may be linked using the wikilink syntax (`[[0001]]`).
 - Notes may have "parent" and "descendant" notes; they may also be linked to project notes.
-- Bibliographical annotation is supported with appropriate BibTeX references.
+- Bibliographical annotation is supported with BibTeX references.
 - Notes may have tags (identified by `#hashtags`).
 - Notes have a YAML(ish) frontmatter to keep metadata and are (preferrably, but not necessarily) written in Markdown.
 
@@ -26,6 +26,9 @@ For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-l
 ```lisp
 (defconst phi-packages
   '((phi-notes :location local)))
+
+(defun phi/init-phi-notes ()
+  (use-package phi-notes))
 
 (with-eval-after-load 'helm-bibtex
   (helm-bibtex-helmify-action bibtex-completion-create-phi-note helm-bibtex-create-phi-note)
