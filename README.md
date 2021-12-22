@@ -93,14 +93,21 @@ Searching and inserting links to other notes:
 
 | Key binding | Description                                                                                                                                                                                                                   |
 | ----------- | -----------                                                                                                                                                                                                                   |
-| `C-c i`     | `helm-phi-find`. Search by note title or id. All these commands may be used to execute different actions (try `C-z`): open the note, insert a wikilink to the note, insert title and wikilink, insert title and wikikink and assign the note to the current project (i.e the file being visited). |
+| `C-c i`     | `helm-phi-find`. Search by note title or id.  |
 | `C-c f f`   | `helm-ag-phi-find`. Search the contents of the repository with `helm-ag`. You may configure it for different engines (such as `ripgrep`).                                                                                     |
 | `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links poiting to the current one.                                                                                                                                          |
-| `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                 
+| `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
+
+With `helm-ag` commands you may use these actions:
+
+- Open the note;
+- Insert (in the current buffer) a wikilink to the selected note;
+- Insert title and wikilink;
+- Insert title and wikikink and assign the note to the current project (i.e the file being visited), by modifying the linked note's `proj` field.
 
 ## Anatomy of PHI notes
 
-A `PHI` contains in its first lines a YAML(ish) frontmatter, which is typically like this:
+A `PHI` note contains in its first lines a YAML(ish) frontmatter, which is typically like this:
 
 ```yaml
 ---
