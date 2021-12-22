@@ -75,7 +75,7 @@ Open a repository:
 
 | Key binding                            | Description                                                                        |
 | -----------                            | -----------                                                                        |
-| `M-x a z` (or other global keybinding) | `helm-phi-open-repo`. Search notes titles (`heml` actions may be used, see below). |
+| `M-m a z` (or other global keybinding) | `helm-phi-open-repo`. Prompt for a repository and search its notes by title (`helm` actions may be used, see below). |
 
 Navigation:
 
