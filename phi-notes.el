@@ -201,7 +201,7 @@ tags:	 	%s
 
 (defun phi--prompt-for-notes-path ()
   (cadr (assoc (completing-read "Select a note repository: "
-                                 phi-repository-alist) phi-repository-alist)))
+                                phi-repository-alist) phi-repository-alist)))
 
 (defun phi-notes-path ()
   "Get the path for notes (usually the default directory)"
