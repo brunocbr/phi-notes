@@ -66,7 +66,7 @@ Open your `.spacemacs` configuration (`M-m f e d`) and add `phi` to `dotspacemac
 
 A `.counter` file is kept in the same directory of your notes in order to keep the value of the incremental counter used for generating note ids. To initialize it, use the interactive function `M-x phi-initialize-counter`, which will prompt for the desired note directory.
 
-You may then configure one or multiple repositories with `customize-variable phi-repository-alist`. The list will contain elements consisting in a name of the repository, a corresponding directory and an optional value for the "master note" id (which is the default note displayed in the sidebar in absence of a project or parent note). This setup is also needed for the creation of independent, originating notes (`M-m C o` if you used the configuration above), when it makes sense to prompt for a location to create them. All the other functionalities are sensitive to the context of the file currently being visited.
+You may then configure one or multiple repositories with `M-x customize-variable phi-repository-alist`. The list will contain elements consisting in a name of the repository, a corresponding directory and an optional value for the "master note" id (which is the default note displayed in the sidebar in absence of a project or parent note). This setup is also needed for the creation of independent, originating notes (`M-m C o` if you used the configuration above), when it makes sense to prompt for a location to create them. All the other functionalities are sensitive to the context of the file currently being visited.
 
 
 ## Usage
@@ -106,7 +106,7 @@ Searching and inserting links to other notes:
 | ----------- | -----------                                                                                                                                                                                                                   |
 | `C-c i`     | `helm-phi-find`. Search by note title or id. Insert wikilinks with `helm` actions (see below). |
 | `C-c f f`   | `helm-ag-phi-find`. Search the contents of the repository with `helm-ag`. You may configure it for different engines (such as `ripgrep`).                                                                                     |
-| `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links poiting to the current one.                                                                                                                                          |
+| `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links pointing to the current one.                                                                                                                                         |
 | `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
 
 With the `helm` and `helm-ag` commands the following actions are available:
