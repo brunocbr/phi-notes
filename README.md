@@ -98,7 +98,7 @@ Searching and inserting links to other notes:
 | `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links poiting to the current one.                                                                                                                                          |
 | `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
 
-With `helm-ag` commands you may use these actions:
+With the `helm` and `helm-ag` command the following actions are available:
 
 - Open the note;
 - Insert (in the current buffer) a wikilink to the selected note;
