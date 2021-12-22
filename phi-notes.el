@@ -69,8 +69,7 @@ tags:	 	%s
 
 
 (defcustom phi-repository-alist
-  '(("phi" "~/phi" "0000")
-    ("alpha" "~/alpha" "7000"))
+  nil
   "Note repositories (\"NAME\" \"PATH\" \"MASTERID\") ..."
   :type '(alist :key-type (symbol :tag "Name")
                 :value-type (list (string :tag "Path")
@@ -191,16 +190,43 @@ tags:	 	%s
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;###autoload
-(defun phi-initialize-counter ()
+(defun phi-initialize-counter (&optional dir value)
   "Prompts for directory and value, and create a counter"
   (interactive)
-  (let ((default-directory (read-directory-name "Select the directory where to create or reset the counter: "
-                                                default-directory))
-        (counter (read-string "Value: " "0000"))))
+  (let* ((default-directory (or dir (read-directory-name "Select the directory where to create or reset the counter: ")))
+         (counter (read-string "Set counter value: " (or value "0000"))))
+    (make-directory default-directory t)
     (with-temp-file phi-counter-file
-      (insert counter)))
+      (insert counter))))
+
+(defun phi--get-current-counter-from-file (path)
+  (if (file-exists-p path)
+      (with-temp-buffer
+        (insert-file-contents path)
+        (format phi-id-format (string-to-number (buffer-string))))))
+
+;;;###autoload
+(defun phi-add-repository ()
+  "Helper function for intializing a repository and customizing `phi-repository-alist'"
+  (interactive)
+  (let* ((repo-name (read-string "Repository name: "))
+         (existing-repo-dir (car (cdr (assoc repo-name phi-repository-alist))))
+         (repo-dir (read-directory-name "Select the directory for the note repository"
+                                        (or existing-repo-dir default-directory)))
+         (counter-path (concat repo-dir "/" phi-counter-file))
+         (counter-value (phi--get-current-counter-from-file counter-path))
+         (entry (assoc repo-name phi-repository-alist)))
+    (phi-initialize-counter repo-dir counter-value)
+    (if entry (setcdr entry (cons repo-dir (cons phi-default-master-note-id nil)))
+      (progn
+        (setq params (cons repo-name (cons repo-dir (cons phi-default-master-note-id nil))))
+        (if phi-repository-alist
+            (push params (cdr (last phi-repository-alist)))
+          (setq phi-repository-alist (cons params nil)))))
+    (customize-variable 'phi-repository-alist)))
 
 (defun phi--prompt-for-notes-path ()
+  (unless phi-repository-alist (error "No repository set! Use `phi-add-repository'."))
   (if (equal (length phi-repository-alist) 1)
       (cadr (car phi-repository-alist))
     (cadr (assoc (completing-read "Select a note repository: "
@@ -216,13 +242,11 @@ tags:	 	%s
   "Increment and return current counter"
   (let ((counter)
         (phi-counter-path (concat (phi-notes-path) "/" phi-counter-file)))
-    (with-temp-buffer
-      (insert-file-contents phi-counter-path)
-      (setq counter (format phi-id-format (1+ (string-to-number (buffer-string))))))
+    (setq counter (format phi-id-format
+                          (1+ (string-to-number (phi--get-current-counter-from-file phi-counter-path)))))
     (with-temp-file phi-counter-path
       (insert counter))
-    counter
-    ))
+    counter))
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
