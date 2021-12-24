@@ -242,6 +242,9 @@ tags:	 	%s
 
 (defun phi-notes-path ()
   "Get the path for notes (usually the default directory)"
+  (if phi-mode
+      (setq default-directory
+            (file-name-directory buffer-file-name))) ;; enforce directory when visiting a PHI note
   (if (file-exists-p phi-counter-file)
       default-directory
     (phi--prompt-for-notes-path)))
