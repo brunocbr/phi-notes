@@ -2,7 +2,7 @@
  
 This emacs package provides a `phi-mode` minor-mode for a Zettelkasten-style notetaking system with the following characteristics:
 
-- Notes are identified by unique, sequential numbers (`0001`, `0002` etc.), or by timestamps (`202112241152`).
+- Notes are identified by unique, sequential numbers (`0001`, `0002` etc.) or timestamps (`202112241152`).
 - Notes may be linked using the wikilink syntax (`[[0001]]`).
 - Notes may have "parent" and "descendant" notes; they may also be linked to project notes.
 - Bibliographical annotation is supported with BibTeX references.
