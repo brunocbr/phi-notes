@@ -242,7 +242,7 @@ tags:	 	%s
 (defun phi-notes-path (&optional usecontext)
   "Get the path for notes (usually the default directory).
 
-If optional `USECONTEXT`, enforce setting the default directory to the current note's directory"
+If optional USECONTEXT is not nil, enforce setting the default directory to the current note's directory"
   (if (and usecontext phi-mode)
       (setq default-directory
             (file-name-directory buffer-file-name))) ;; enforce directory when visiting a PHI note
@@ -397,7 +397,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (if (looking-at "#*\s*\\(.\\{1,72\\}\\)")
         (replace-regexp-in-string "\s*#*\s*$" "" (match-string-no-properties 1)))))
 
-(defun phi-new-common-note (&optional body parent nocontext)
+(defun phi-new-common-note (&optional body parent)
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let ((title (read-string "title: " (phi-extract-title-from-body body)))
