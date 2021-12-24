@@ -230,7 +230,6 @@ tags:	 	%s
         (if phi-repository-alist
             (push params (cdr (last phi-repository-alist)))
           (setq phi-repository-alist (cons params nil)))))
-    (setq default-directory repo-dir) ;; enforce change of directory
     (customize-variable 'phi-repository-alist)))
 
 (defun phi--prompt-for-notes-path ()
@@ -240,24 +239,25 @@ tags:	 	%s
     (cadr (assoc (completing-read "Select a note repository: "
                                   phi-repository-alist) phi-repository-alist))))
 
-(defun phi-notes-path ()
-  "Get the path for notes (usually the default directory)"
-  (if phi-mode
+(defun phi-notes-path (&optional usecontext)
+  "Get the path for notes (usually the default directory).
+
+If optional `USECONTEXT`, enforce setting the default directory to the current note's directory"
+  (if (and usecontext phi-mode)
       (setq default-directory
             (file-name-directory buffer-file-name))) ;; enforce directory when visiting a PHI note
   (if (file-exists-p phi-counter-file)
       default-directory
-    (phi--prompt-for-notes-path)))
+    (setq default-directory (phi--prompt-for-notes-path))))
 
 (defun phi--get-counter-path ()
-  "Get the full path for the coutner file"
+  "Get the full path for the counter file"
   (concat (phi-notes-path) "/" phi-counter-file))
 
 (defun phi-get-counter ()
   "Increment and return current counter"
   (let* ((phi-counter-path (phi--get-counter-path))
          (current-counter (phi--get-current-counter-from-file phi-counter-path)))
-    (message (format "current counter is %s" current-counter))
     (if (string= current-counter "TIMESTAMP")
         (format-time-string phi-id-timestamp-format (current-time))
       (let ((counter))
@@ -285,9 +285,11 @@ tags:	 	%s
     (string-match (concat "^" phi-id-regex) filename)
     (match-string 0 filename)))
 
-(defun phi-matching-file-name (id)
-  "Return the first match of a file name starting with id"
-  (nth 0 (file-name-all-completions id (phi-notes-path)))) ;; blank for current dir instead of phi-notes-path
+(defun phi-matching-file-name (id &optional usecontext)
+  "Return the first match of a file name starting with ID.
+
+If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
+  (nth 0 (file-name-all-completions id (phi-notes-path usecontext)))) ;; blank for current dir instead of phi-notes-path
 
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
@@ -311,7 +313,7 @@ tags:	 	%s
   (interactive)
   (let ((id (phi-get-parent-note-id)))
     (if id
-        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id))))
+        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id) t)))
       (error "The current note has no parent"))))
 
 (defun phi-get-next-link-at-point ()
@@ -326,7 +328,7 @@ tags:	 	%s
 (defun phi-visit-next-link ()
   "Visit the next linked note. `C-u' to visit note in other window."
   (interactive)
-  (let ((buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point)))))
+  (let ((buffer (find-file-noselect (phi-matching-file-name (phi-get-next-link-at-point) t))))
     (if (and (not (equal (current-buffer) phi-sidebar-buffer))
              (equal current-prefix-arg nil)) ; no C-u
         (switch-to-buffer buffer)
@@ -395,7 +397,7 @@ tags:	 	%s
     (if (looking-at "#*\s*\\(.\\{1,72\\}\\)")
         (replace-regexp-in-string "\s*#*\s*$" "" (match-string-no-properties 1)))))
 
-(defun phi-new-common-note (&optional body parent)
+(defun phi-new-common-note (&optional body parent nocontext)
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let ((title (read-string "title: " (phi-extract-title-from-body body)))
@@ -508,7 +510,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   buffer)
 
 (defun phi-sidebar-create-buffer (id)
-  (let ((file (phi-matching-file-name id)))
+  (let ((file (phi-matching-file-name id t)))
         (if file
             (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
                                       (find-file-noselect file)))
