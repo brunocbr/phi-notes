@@ -151,6 +151,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-id-timestamp-format "%Y%m%d%H%M"
+  "Format for timestamp IDs"
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-id-regex "[0-9]\\{4,\\}"
   "Regular expression for valid note id"
   :type 'string
@@ -194,7 +199,7 @@ tags:	 	%s
   "Prompts for directory and value, and create a counter"
   (interactive)
   (let* ((default-directory (or dir (read-directory-name "Select the directory where to create or reset the counter: ")))
-         (counter (read-string "Set counter value: " (or value "0000"))))
+         (counter (read-string "Set a counter value or type \"TIMESTAMP\": " (or value "0000"))))
     (make-directory default-directory t)
     (with-temp-file phi-counter-file
       (insert counter))))
@@ -203,7 +208,9 @@ tags:	 	%s
   (if (file-exists-p path)
       (with-temp-buffer
         (insert-file-contents path)
-        (format phi-id-format (string-to-number (buffer-string))))))
+        (if (string= (buffer-string) "TIMESTAMP")
+            "TIMESTAMP"
+          (format phi-id-format (string-to-number (buffer-string)))))))
 
 ;;;###autoload
 (defun phi-add-repository ()
@@ -223,6 +230,7 @@ tags:	 	%s
         (if phi-repository-alist
             (push params (cdr (last phi-repository-alist)))
           (setq phi-repository-alist (cons params nil)))))
+    (setq default-directory repo-dir) ;; enforce change of directory
     (customize-variable 'phi-repository-alist)))
 
 (defun phi--prompt-for-notes-path ()
@@ -238,15 +246,23 @@ tags:	 	%s
       default-directory
     (phi--prompt-for-notes-path)))
 
+(defun phi--get-counter-path ()
+  "Get the full path for the coutner file"
+  (concat (phi-notes-path) "/" phi-counter-file))
+
 (defun phi-get-counter ()
   "Increment and return current counter"
-  (let ((counter)
-        (phi-counter-path (concat (phi-notes-path) "/" phi-counter-file)))
-    (setq counter (format phi-id-format
-                          (1+ (string-to-number (phi--get-current-counter-from-file phi-counter-path)))))
-    (with-temp-file phi-counter-path
-      (insert counter))
-    counter))
+  (let* ((phi-counter-path (phi--get-counter-path))
+         (current-counter (phi--get-current-counter-from-file phi-counter-path)))
+    (message (format "current counter is %s" current-counter))
+    (if (string= current-counter "TIMESTAMP")
+        (format-time-string phi-id-timestamp-format (current-time))
+      (let ((counter))
+        (setq counter (format phi-id-format
+                              (1+ (string-to-number (phi--get-current-counter-from-file phi-counter-path)))))
+        (with-temp-file phi-counter-path
+          (insert counter))
+        counter))))
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
