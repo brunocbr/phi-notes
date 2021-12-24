@@ -657,7 +657,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-do-phi-ag (input)
   (require 'helm-ag)
-  (helm-ag--do-ag-set-source (phi-notes-path))
+  (helm-ag--do-ag-set-source (phi-notes-path t))
   (helm-add-action-to-source "Insert wikilink"
                              #'helm-ag-phi-insert-link-action
                              helm-source-do-ag)
