@@ -503,7 +503,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-sidebar-adjust-buffer (buffer)
   (with-current-buffer buffer
     (phi-mode)
-    (if phi-sidebar-olivetti-width
+    (if (and phi-sidebar-olivetti-width (bound-and-true-p olivetti-mode))
         (olivetti-set-width phi-sidebar-olivetti-width))
     (text-scale-set phi-sidebar-text-scale-set)
     (phi-buttonize-buffer))
