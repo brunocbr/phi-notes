@@ -710,7 +710,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun phi-markdown-convert-wiki-link-to-filename-adv (orig-func link)
   "Advise function `markdown-convert-wiki-link-to-filename' to get a complete filename when `link' is an ID for an existing note."
-  (or (and (string-match phi-id-regex link)
+  (or (and (string-match (concat "^" phi-id-regex) link)
            (phi-matching-file-name link))
       (funcall orig-func link)))
 
