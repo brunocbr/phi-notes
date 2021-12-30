@@ -706,7 +706,17 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (setq default-directory (phi--prompt-for-notes-path))
   (helm-phi-find))
 
-;; phi-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; markdown ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun phi-markdown-convert-wiki-link-to-filename-adv (orig-func link)
+  "Advise function `markdown-convert-wiki-link-to-filename' to get a complete filename when `link' is an ID for an existing note."
+  (or (and (string-match phi-id-regex link)
+           (phi-matching-file-name link))
+      (funcall orig-func link)))
+
+(advice-add 'markdown-convert-wiki-link-to-filename :around #'phi-markdown-convert-wiki-link-to-filename-adv)
+
+;;; phi-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar phi-mode-map
   (let ((map (make-sparse-keymap)))
