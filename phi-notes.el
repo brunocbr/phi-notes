@@ -308,6 +308,15 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
       (or project nil))))
 
 ;;;###autoload
+(defun phi-find-note (id repo)
+  "Visit note `ID' in repository `REPO'"
+  (setq default-directory (cadr (assoc repo phi-repository-alist)))
+  (let ((filename (phi-matching-file-name id t)))
+    (if filename
+        (switch-to-buffer (find-file-noselect filename))
+      (error (format "Invalid note ID %s" id)))))
+
+;;;###autoload
 (defun phi-visit-parent-note ()
   "Visit the parent note"
   (interactive)
