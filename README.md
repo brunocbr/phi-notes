@@ -91,6 +91,8 @@ Navigation:
 | `C-c u`     | Visit parent note.                                                                                                                     |
 | `C-c j`     | Visit the next link to the right.                                                                                                      |
 
+You can make use of `markdown-mode` navigation key bindings to navigate to the next (`M-n`) or previous (`M-p`) (wiki)link or to open (`C-c o`) it. Wikilinks in the sidebar are also clickable with the mouse.
+
 Creating notes:
 
 | Key binding                     | Description                                                                                                                                                                                                                                                                                                                                                                              |
@@ -136,7 +138,7 @@ And, just below it, separated by an empty line, a breadcrumb with symbols, follo
 △[[7012]]
 ```
 
-The symbols may be customized. `title` and `id` fields and simply redundant; the package will always extract this information from the actual filename.
+The symbols may be customized. `title` and `id` fields are simply redundant; the package will always extract this information from the actual filename.
  
 The frontmatter may also contain other fields (see below), depending on the kind of the note.
 
