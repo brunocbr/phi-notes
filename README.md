@@ -91,7 +91,7 @@ Navigation:
 | `C-c u`     | Visit parent note.                                                                                                                     |
 | `C-c j`     | Visit the next link to the right.                                                                                                      |
 
-You can make use of `markdown-mode` navigation key bindings to navigate to the next (`M-n`) or previous (`M-p`) (wiki)link or to follow (`M-m m f` in Spacemacs) it. Wikilinks in the sidebar are also clickable with the mouse.
+You can make use of `markdown-mode` navigation key bindings to navigate to the next (`M-n`) or previous (`M-p`) (wiki)link or to follow it (`M-m m f` in Spacemacs). Wikilinks in the sidebar are also clickable with the mouse.
 
 Creating notes:
 
