@@ -32,12 +32,19 @@ For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-l
 
 (with-eval-after-load 'helm-bibtex
   (helm-bibtex-helmify-action bibtex-completion-create-phi-note helm-bibtex-create-phi-note)
+
   (helm-add-action-to-source'
    "Create PHI bibliographical annotation" 'helm-bibtex-create-phi-note
    helm-source-bibtex 1))
 
+(defun phi/markdown-mode-hook ()
+  (phi-mode)
+  (setq markdown-enable-wiki-links t)
+  (font-lock-add-keywords nil
+                          '(("\\(#[0-9a-zA-Z\u00c0-\u017f_\\./-]+\\)" . 'font-lock-keyword-face))))
+
 (with-eval-after-load 'markdown-mode
-  (add-hook 'markdown-mode-hook 'phi-mode))
+  (add-hook 'markdown-mode-hook 'phi/markdown-mode-hook))
 ```
 
 And this to `keybindings.el`:
@@ -91,7 +98,7 @@ Navigation:
 | `C-c u`     | Visit parent note.                                                                                                                     |
 | `C-c j`     | Visit the next link to the right.                                                                                                      |
 
-You can make use of `markdown-mode` navigation key bindings to navigate to the next (`M-n`) or previous (`M-p`) (wiki)link or to follow it (`M-m m f` in Spacemacs). This assumes you have enabled wikilinks, e. g. with `(setq markdown-enable-wiki-links t)`.
+You can make use of `markdown-mode` navigation key bindings to navigate to the next (`M-n`) or previous (`M-p`) (wiki)link or to follow it (`M-m m f` in Spacemacs).
 
 Wikilinks in the sidebar are also clickable with the mouse.
 
