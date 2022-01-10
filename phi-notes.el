@@ -771,10 +771,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm-do-phi-ag nil))
 
 ;;;###autoload
-(defun helm-phi-find (&optional ignore-context)
+(defun helm-phi-find ()
   (require 'helm-source)
   (interactive)
-  (setq default-directory (phi-notes-path (not ignore-context)))
+
   (helm :sources (helm-build-sync-source "PHI Notes"
                    :candidates 'helm-phi-source-data-with-tags
                    :candidate-transformer 'helm-phi-candidates-transformer
@@ -790,11 +790,20 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 
 ;;;###autoload
+(defun helm-phi-insert ()
+  "Calls `helm-phi-find' considering the current note's context"
+  (interactive)
+  (with-current-buffer
+      (if phi-mode
+          (setq default-directory (file-name-directory buffer-file-name))))
+  (helm-phi-find))
+
+;;;###autoload
 (defun helm-phi-open-repo ()
   "Prompt for a repository and call `helm-phi-find`."
   (interactive)
   (setq default-directory (phi--prompt-for-notes-path))
-  (helm-phi-find t))
+  (helm-phi-find))
 
 ;;; markdown ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,7 +827,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
-    (define-key map (kbd "C-c i") #'helm-phi-find)
+    (define-key map (kbd "C-c i") #'helm-phi-insert)
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
     (define-key map (kbd "C-c f t") #'helm-ag-phi-find-like-tags)
     (define-key map (kbd "C-c f f") #'helm-ag-phi-find)

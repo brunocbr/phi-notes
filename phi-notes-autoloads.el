@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil "phi-notes" "phi-notes.el" (25045 64945 845756
-;;;;;;  984000))
+;;;### (autoloads nil "phi-notes" "phi-notes.el" (25052 15555 635970
+;;;;;;  464000))
 ;;; Generated autoloads from phi-notes.el
 
 (autoload 'phi-initialize-counter "phi-notes" "\
@@ -53,6 +53,9 @@ Focus on PHI Sidebar" t nil)
 (autoload 'helm-ag-phi-find "phi-notes" nil t nil)
 
 (autoload 'helm-phi-find "phi-notes" nil t nil)
+
+(autoload 'helm-phi-insert "phi-notes" "\
+Calls `helm-phi-find' considering the current note's context" t nil)
 
 (autoload 'helm-phi-open-repo "phi-notes" "\
 Prompt for a repository and call `helm-phi-find`." t nil)
