@@ -243,7 +243,7 @@ tags:	 	%s
   "Get the path for notes (usually the default directory).
 
 If optional USECONTEXT is not nil, enforce setting the default directory to the current note's directory"
-  (if (and usecontext phi-mode)
+  (if usecontext ;; (and usecontext phi-mode)
       (setq default-directory
             (file-name-directory buffer-file-name))) ;; enforce directory when visiting a PHI note
   (if (file-exists-p phi-counter-file)
@@ -278,12 +278,15 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Return a wikilink for the given `id'"
   (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
 
+(defun phi--get-note-id-from-file-name (filename)
+  (string-match (concat "^" phi-id-regex) filename)
+  (match-string 0 filename))
+
 (defun phi-get-current-note-id ()
   "Get the current note id"
   (interactive)
   (let ((filename (file-name-nondirectory buffer-file-name)))
-    (string-match (concat "^" phi-id-regex) filename)
-    (match-string 0 filename)))
+    (phi--get-note-id-from-file-name filename)))
 
 (defun phi-matching-file-name (id &optional usecontext)
   "Return the first match of a file name starting with ID.
@@ -351,9 +354,31 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   "Return the specified field contents for the current note"
   (save-excursion
     (goto-char (point-min))
-    (if  (and (re-search-forward (concat "^" field ":\\s-*") nil t)
-              (looking-at (concat ".*$")))
-        (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0)))))
+    (if (looking-at-p "---") (forward-line 1))
+    (let ((target-pos (point))
+          (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+      (goto-char target-pos)
+      (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
+                (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
+                (looking-at (concat ".*$")))
+          (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))
+
+(defun phi--get-tags-from-note-as-str (id)
+  "Get a string of the tags from a given note `ID'"
+  (let ((file (concat (phi-notes-path) "/" (phi-matching-file-name id)))
+        contents)
+    (with-current-buffer (get-buffer-create "*PHI temp*")
+      (insert-file-contents file nil nil nil t)
+      (setq contents (phi-get-note-field-contents phi-tags-field)))))
+
+(defun phi--get-tags-from-file-as-str (file)
+  "Get a string of the tags from `FILE'"
+  (let (contents)
+    (with-current-buffer (get-buffer-create "*PHI temp*")
+      (insert-file-contents file nil nil nil t)
+      (setq contents (phi-get-note-field-contents phi-tags-field)))
+    (kill-buffer "*PHI temp*")
+    contents))
 
 (defun phi-set-note-field-contents (field value)
   "Insert or update a field in the note's YAML frontmatter."
@@ -600,10 +625,49 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (switch-to-buffer buffer)
       (pop-to-buffer buffer))))
 
-;; helm-deft-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;i;;;;;;;;;;
+
+(defun phi-cache-initialize ()
+  "Initialize hash tables for caching files."
+  (setq phi-hash-contents (make-hash-table :test 'equal))
+  (setq phi-hash-mtimes (make-hash-table :test 'equal)))
+
+(defun phi-cache-newer-file (file mtime)
+  "Update cached information for FILE with given MTIME."
+  ;; Modification time
+  (puthash file mtime phi-hash-mtimes)
+  (let (contents)
+    ;; Contents
+    (setq contents (phi--get-tags-from-file-as-str file))
+    (puthash file contents phi-hash-contents)))
+
+(defun phi-cache-file (file)
+  "Update file cache if FILE exists."
+  (let ((mtime-cache (gethash file phi-hash-mtimes))
+        (mtime-file (nth 5 (file-attributes (file-truename file)))))
+    (if (or (not mtime-cache)
+            (time-less-p mtime-cache mtime-file))
+        (phi-cache-newer-file file mtime-file))))
+
+(defun phi-cache-get-contents (file)
+  "Get cached contents for corresponding `FILE'"
+  (gethash (expand-file-name file) phi-hash-contents))
+
+(defun phi-cache-refresh-dir-maybe (dir)
+  (let ((mtime-cache (gethash (expand-file-name dir) phi-hash-mtimes))
+        (mtime-file (nth 5 (file-attributes (expand-file-name dir)))))
+    (if (or (not mtime-cache)
+            (time-less-p mtime-cache mtime-file))
+        (progn
+          (mapcar #'phi-cache-file
+                (directory-files (expand-file-name dir) t
+                                 (helm-phi--extract-id-from-cadidate-re)))
+          (puthash (expand-file-name dir) mtime-file phi-hash-mtimes)))))
+
+;; helm-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun helm-phi--extract-id-from-cadidate-re ()
-  (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)"))
+  (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$"))
 
 (defun helm-phi--get-file-name (candidate)
   (let* ((file-line (helm-grep-split-line candidate))
@@ -651,12 +715,28 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                 #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
 
 
+(defun helm-phi-source-data-with-tags ()
+  (phi-cache-refresh-dir-maybe (phi-notes-path))
+  (mapcar #'(lambda (x) (cons (format "%s::%s" x (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
+                                            (phi-cache-get-contents x)
+                                               "")) x))
+          (helm-phi-source-data-sorted)))
+
+
+
 (defun helm-phi-formatter (candidate)
-  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$")
-                      candidate)
-    (format "%s %s"
-            (propertize (match-string 1 candidate) 'face 'helm-grep-lineno)
-            (propertize (match-string 2 candidate) 'face 'helm-moccur-buffer))))
+  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)$")
+                      (car candidate))
+    (let ((width (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
+          (display (car candidate)))
+      (cons
+      (concat
+       (truncate-string-to-width 
+        (format "%s %s"
+                (propertize (match-string 1 display) 'face 'helm-grep-lineno)
+                (propertize (match-string 2 display) 'face 'helm-moccur-buffer)) width nil ?\s t
+                #'helm-moccur-buffer)
+       " " (propertize (match-string 4 display) 'face 'font-lock-keyword-face)) (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
   "Format CANDIDATES for display in helm."
@@ -691,11 +771,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm-do-phi-ag nil))
 
 ;;;###autoload
-(defun helm-phi-find ()
+(defun helm-phi-find (&optional ignore-context)
   (require 'helm-source)
   (interactive)
-  (helm :sources (helm-build-in-buffer-source "PHI Notes"
-                   :data 'helm-phi-source-data-sorted
+  (setq default-directory (phi-notes-path (not ignore-context)))
+  (helm :sources (helm-build-sync-source "PHI Notes"
+                   :candidates 'helm-phi-source-data-with-tags
                    :candidate-transformer 'helm-phi-candidates-transformer
                    :action (helm-make-actions "Open note"
                                               'helm-phi-find-note-action
@@ -713,7 +794,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   "Prompt for a repository and call `helm-phi-find`."
   (interactive)
   (setq default-directory (phi--prompt-for-notes-path))
-  (helm-phi-find))
+  (helm-phi-find t))
 
 ;;; markdown ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -756,5 +837,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   )
 
 (add-hook 'phi-mode-hook 'phi-mode-check-external-origin)
+
+(phi-cache-initialize)
 
 (provide 'phi-notes)
