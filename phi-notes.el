@@ -793,9 +793,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-insert ()
   "Calls `helm-phi-find' considering the current note's context"
   (interactive)
-  (with-current-buffer
-      (if phi-mode
-          (setq default-directory (file-name-directory buffer-file-name))))
+  (if phi-mode
+      (setq default-directory (file-name-directory buffer-file-name)))
   (helm-phi-find))
 
 ;;;###autoload
