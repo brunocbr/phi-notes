@@ -692,6 +692,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
       (with-current-buffer (current-buffer)
         (insert (concat title " " wikilink)))))
 
+(defun helm-phi-insert-titles-and-links-action (candidate)
+  "helm action to insert multiple titles and links"
+  (loop for cand in (helm-marked-candidates)
+        do
+        (with-current-buffer (current-buffer)
+          (insert "- ") (helm-phi-insert-title-and-link-action cand) (newline))))
+
 (defun helm-phi-insert-and-assign-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
   (let* ((id (match-string-no-properties 1 candidate))
@@ -786,8 +793,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                               'helm-phi-find-note-action
                                               "Insert link to note"
                                               'helm-ag-phi-insert-link-action
-                                              "Insert title & link"
-                                              'helm-phi-insert-title-and-link-action
+                                              "Insert title(s) & link(s)"
+                                              'helm-phi-insert-titles-and-links-action
                                               "Insert & assign to this project"
                                               'helm-phi-insert-and-assign-action))
         :buffer "*helm phi notes"
