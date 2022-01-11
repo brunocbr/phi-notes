@@ -126,7 +126,7 @@ With the `helm` and `helm-ag` commands the following actions are available:
 
 - Open the note;
 - Insert (in the current buffer) a wikilink to the selected note;
-- Insert title and wikilink;
+- Insert title(s) and wikilink(s) (multiple entries may be selected with `C-SPC`);
 - Insert title and wikikink and assign the note to the current project (i.e the file being visited), by modifying the linked note's `proj` field.
 
 ## Anatomy of PHI notes
