@@ -87,7 +87,7 @@ Open a repository:
 
 | Key binding                            | Description                                                                        |
 | -----------                            | -----------                                                                        |
-| `M-m a z` (or other global keybinding) | `helm-phi-open-repo`. Prompt for a repository and search its notes by title (`helm` actions may be used, see below). |
+| `M-m a z` (or other global keybinding) | `helm-phi-open-repo`. Prompt for a repository and search its notes by id, title or tags (`helm` actions may be used, see below). |
 
 Navigation:
 
