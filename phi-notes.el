@@ -775,7 +775,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm-do-phi-ag nil))
 
 ;;;###autoload
-(defun helm-phi-find ()
+(defun helm-phi-find (&optional input)
   (require 'helm-source)
   (interactive)
 
@@ -790,7 +790,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                               'helm-phi-insert-title-and-link-action
                                               "Insert & assign to this project"
                                               'helm-phi-insert-and-assign-action))
-        :buffer "*helm phi notes"))
+        :buffer "*helm phi notes"
+        :input input))
+
+;;;###autoload
+(defun helm-phi-find-like-tags ()
+  (interactive)
+  (helm-phi-find (phi-get-note-field-contents phi-tags-field)))
 
 
 ;;;###autoload
@@ -832,7 +838,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
     (define-key map (kbd "C-c i") #'helm-phi-insert)
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
-    (define-key map (kbd "C-c f t") #'helm-ag-phi-find-like-tags)
+    (define-key map (kbd "C-c f t") #'helm-phi-find-like-tags)
     (define-key map (kbd "C-c f f") #'helm-ag-phi-find)
     map)
   "Main mode map for `phi-mode'.")

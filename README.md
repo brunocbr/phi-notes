@@ -120,7 +120,7 @@ Searching and inserting links to other notes:
 | `C-c i`     | `helm-phi-insert`. Search by note title, id or tags. Insert wikilinks with `helm` actions (see below).  |
 | `C-c f f`   | `helm-ag-phi-find`. Search the contents of the repository with `helm-ag`. You may configure it for different engines (such as `ripgrep`).                                                                                     |
 | `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links pointing to the current one.                                                                                                                                         |
-| `C-c f t`   | `helm-ag-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
+| `C-c f t`   | `helm-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
 
 With the `helm` and `helm-ag` commands the following actions are available:
 
