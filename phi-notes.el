@@ -736,7 +736,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                 (propertize (match-string 1 display) 'face 'helm-grep-lineno)
                 (propertize (match-string 2 display) 'face 'helm-moccur-buffer)) width nil ?\s t
                 #'helm-moccur-buffer)
-       " " (propertize (match-string 4 display) 'face 'font-lock-keyword-face)) (cdr candidate)))))
+       " "
+       (truncate-string-to-width
+        (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil nil t
+        #'font-lock-keyword-face))
+      (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
   "Format CANDIDATES for display in helm."
