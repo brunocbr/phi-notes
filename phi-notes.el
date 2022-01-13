@@ -288,6 +288,12 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (let ((filename (file-name-nondirectory buffer-file-name)))
     (phi--get-note-id-from-file-name filename)))
 
+(defun phi-get-current-note-title ()
+  "Get current note title from its filename"
+  (let ((filename (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
+    (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") filename)
+        (match-string-no-properties 2 filename))))
+
 (defun phi-matching-file-name (id &optional usecontext)
   "Return the first match of a file name starting with ID.
 
