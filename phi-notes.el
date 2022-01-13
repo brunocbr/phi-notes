@@ -410,6 +410,24 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
               (backward-char)))
           (insert (format "%s:\t\t%s" field value)))))))
 
+(defun phi--without-quotes (s)
+  "Lame function to remove quotes"
+  (string-match "^'\\(.*\\)'$" s)
+  (match-string-no-properties 1 s))
+
+(defun phi-rename-current-note (&optional title)
+  "Rename the current note to `TITLE' or ask for one."
+  (interactive)
+  (let ((new-title (or title
+                       (read-string "New title: " (phi-get-current-note-title))))
+        (dir (file-name-directory (expand-file-name (buffer-file-name)))))
+    (when new-title
+      (phi-set-note-field-contents "title" (format "'%s'" new-title))
+      (let ((new-file-name (concat dir (phi-get-current-note-id) " " new-title
+                                   "." (file-name-extension (buffer-file-name)))))
+        (rename-file (buffer-file-name) new-file-name)
+        (set-visited-file-name new-file-name)))))
+
 (defun phi-create-common-note (id title &optional parent tags citekey loc body)
   "Create a common note buffer"
   (interactive)
@@ -853,6 +871,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
     (define-key map (kbd "C-c f t") #'helm-phi-find-like-tags)
     (define-key map (kbd "C-c f f") #'helm-ag-phi-find)
+    (define-key map (kbd "C-c R") #'phi-rename-current-note)
     map)
   "Main mode map for `phi-mode'.")
 

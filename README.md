@@ -129,6 +129,10 @@ With the `helm` and `helm-ag` commands the following actions are available:
 - Insert title(s) and wikilink(s) (multiple entries may be selected with `C-SPC`);
 - Insert title and wikikink and assign the note to the current project (i.e the file being visited), by modifying the linked note's `proj` field.
 
+Changing metadata and file names:
+
+| `C-c R` | `phi-rename-current-note`. Rename the current note, modifying its file name. |
+
 ## Anatomy of PHI notes
 
 A `PHI` note contains in its first lines a YAML(ish) frontmatter, which is typically like this:
