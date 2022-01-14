@@ -326,7 +326,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi-find-note (id repo)
   "Visit note `ID' in repository `REPO'"
   (setq default-directory (cadr (assoc repo phi-repository-alist)))
-  (let ((filename (phi-matching-file-name id t)))
+  (let ((filename (phi-matching-file-name id)))
     (if filename
         (switch-to-buffer (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
