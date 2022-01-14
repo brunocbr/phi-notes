@@ -131,7 +131,9 @@ With the `helm` and `helm-ag` commands the following actions are available:
 
 Changing metadata and file names:
 
-| `C-c R` | `phi-rename-current-note`. Rename the current note, modifying its file name. |
+| Key binding | Description                                                                  |
+| `C-c R`     | `phi-rename-current-note`. Rename the current note, modifying its file name. |
+
 
 ## Anatomy of PHI notes
 
