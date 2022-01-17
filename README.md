@@ -38,10 +38,11 @@ For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-l
    helm-source-bibtex 1))
 
 (defun phi/markdown-mode-hook ()
-  (phi-mode)
-  (setq markdown-enable-wiki-links t)
-  (font-lock-add-keywords nil
-                          '(("\\(#[0-9a-zA-Z\u00c0-\u017f_\\./-]+\\)" . 'font-lock-keyword-face))))
+  (when (phi-buffer-repository)
+    (phi-mode)
+    (setq markdown-enable-wiki-links t)
+    (font-lock-add-keywords nil
+                            '(("\\(#[0-9a-zA-Z\u00c0-\u017f_\\./ƒ-]+\\)" . 'font-lock-keyword-face)))))
 
 (with-eval-after-load 'markdown-mode
   (add-hook 'markdown-mode-hook 'phi/markdown-mode-hook))

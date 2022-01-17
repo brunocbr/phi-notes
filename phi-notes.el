@@ -294,9 +294,10 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
     (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") filename)
         (match-string-no-properties 2 filename))))
 
-(defun phi-current-note-repository ()
-  "Get the repository name for the current note"
-  (cdr (assoc (directory-file-name (file-name-directory buffer-file-name))
+;;;###autoload
+(defun phi-buffer-repository (&optional buf)
+  "Get the repository name for buffer `BUF', or the current buffer if `nil'."
+  (cdr (assoc (directory-file-name (file-name-directory (buffer-file-name buf)))
               (mapcar (lambda (x) (cons
                                    (directory-file-name (expand-file-name (cadr x))) (first x))) phi-repository-alist))))
 
