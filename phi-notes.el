@@ -565,7 +565,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   :group 'phi-sidebar-faces)
 
 (defface phi-sidebar-face
-  '((t (:height 0.9)))
+  '((t (:height 0.9 :inherit (region))))
   "Default face for the sidebar."
   :group 'phi-sidebar-faces)
 
