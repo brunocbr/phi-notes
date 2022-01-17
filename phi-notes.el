@@ -297,9 +297,11 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 ;;;###autoload
 (defun phi-buffer-repository (&optional buf)
   "Get the repository name for buffer `BUF', or the current buffer if `nil'."
-  (cdr (assoc (directory-file-name (file-name-directory (buffer-file-name buf)))
-              (mapcar (lambda (x) (cons
-                                   (directory-file-name (expand-file-name (cadr x))) (first x))) phi-repository-alist))))
+  (let ((filename (buffer-file-name buf)))
+    (if filename
+        (cdr (assoc (directory-file-name (file-name-directory filename))
+                    (mapcar (lambda (x) (cons
+                                         (directory-file-name (expand-file-name (cadr x))) (first x))) phi-repository-alist))))))
 
 (defun phi-matching-file-name (id &optional usecontext)
   "Return the first match of a file name starting with ID.
@@ -530,12 +532,6 @@ Used by `phi-sidebar-shrink-window' and `phir-sidebar-enlarge-window'."
   :safe 'integerp
   :group 'phi-sidebar)
 
-(defcustom phi-sidebar-text-scale-set
-  0
-  "Text scale for sidebar buffer"
-  :type 'integer
-  :group 'phi-sidebar)
-
 (defcustom phi-sidebar-display-alist
   '((side . left)
     (window-width . 45)
@@ -563,14 +559,26 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   :type 'integer
   :group 'phi-sidebar)
 
+
+(defgroup phi-sidebar-faces ()
+  "Default faces for `phi-mode' sidebar."
+  :group 'phi-sidebar-faces)
+
+(defface phi-sidebar-face
+  '((t (:height 0.9)))
+  "Default face for the sidebar."
+  :group 'phi-sidebar-faces)
+
+
 (defvar phi-sidebar-buffer nil)
 
 (defun phi-sidebar-adjust-buffer (buffer)
   (with-current-buffer buffer
     (phi-mode)
     (if (and phi-sidebar-olivetti-width (bound-and-true-p olivetti-mode))
-        (olivetti-set-width phi-sidebar-olivetti-width))
-    (text-scale-set phi-sidebar-text-scale-set)
+         (olivetti-set-width phi-sidebar-olivetti-width))
+    (setq buffer-face-mode-face 'phi-sidebar-face)
+    (buffer-face-mode)
     (phi-buttonize-buffer))
   buffer)
 
