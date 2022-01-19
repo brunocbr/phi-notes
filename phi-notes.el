@@ -171,6 +171,10 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-project-tag "proj"
+  "Tag identification for projects"
+  :type 'string
+  :group 'phi)
 
 (defcustom phi-default-file-extension "markdown"
   "Default file extension for notes"
@@ -318,6 +322,16 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
 
+(defun phi--is-project (id)
+  (string-match-p (concat phi-tag-symbol phi-project-tag) (phi--get-tags-from-note-as-str id)))
+
+(defun phi-get-ancestor-project-id (id)
+  (and id
+       (or (phi--is-project id)
+           (with-current-buffer (find-file-noselect (phi-matching-file-name id))
+             (or (phi-get-linked-project-note-id)
+                 (phi-get-ancestor-project-id (phi-get-parent-note-id)))))))
+
 (defun phi-get-linked-project-note-id ()
   "Return the id for the project this note is linked to"
   (let ((project (phi-get-note-field-contents phi-project-field)))
@@ -464,7 +478,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (if (looking-at "#*\s*\\(.\\{1,72\\}\\)")
         (replace-regexp-in-string "\s*#*\s*$" "" (match-string-no-properties 1)))))
 
-(defun phi-new-common-note (&optional body parent)
+(defun phi-new-common-note (&optional body parent insert-title)
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let ((title (read-string "title: " (phi-extract-title-from-body body)))
@@ -479,7 +493,8 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)
                                          body))
     (unless (equal "" parent)
-      (insert (concat title " " phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
+      (insert (concat (when insert-title (concat " " title))
+                      phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
       (setq w (selected-window))
       (if (and (equal current-prefix-arg nil) ; no C-u
                (not (equal (current-buffer) phi-sidebar-buffer)))
@@ -498,7 +513,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi-new-descendant-note ()
   "Create a child linked note. `C-u' to create note in other window."
   (interactive)
-  (phi-new-common-note))
+  (phi-new-common-note nil nil t))
 
 ;;;###autoload
 (defun phi-kill-to-new-note (start end)
@@ -515,7 +530,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   "Yank to linked note. `C-u' to create note in other window."
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
-    (phi-new-common-note body)))
+    (phi-new-common-note body nil nil)))
 
 
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -607,7 +622,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-sidebar-with-parent ()
   "Open PHI Sidebar with linked project, parent or master note"
   (interactive)
-  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-parent-note-id) (phi--master-note-id))))
+  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-ancestor-project-id (phi-get-current-note-id)) (phi-get-parent-note-id) (phi--master-note-id))))
 
 ;;;###autoload
 (defun phi-toggle-sidebar ()
