@@ -493,7 +493,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                                          (unless (string= citekey "") citekey) (unless (string= loc "") loc)
                                          body))
     (unless (equal "" parent)
-      (insert (concat (when insert-title (concat " " title))
+      (insert (concat (when insert-title (concat title " "))
                       phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
       (setq w (selected-window))
       (if (and (equal current-prefix-arg nil) ; no C-u
