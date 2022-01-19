@@ -94,7 +94,7 @@ Navigation:
 
 | Key binding | Description                                                                                                                            |
 | ----------- | -----------                                                                                                                            |
-| `C-c ;`     | Toggle the sidebar. It will show one of the following notes: a project note, the parent note, or the "master note" for the repository. |
+| `C-c ;`     | Toggle the sidebar. It will show one of the following notes: the closest project note in the current note's ancestry, the immediate parent note, or the "master note" for the repository. |
 | `C-c :`     | Show the sidebar and give it focus.                                                                                                    |
 | `C-c u`     | Visit parent note.                                                                                                                     |
 | `C-c j`     | Visit the next link to the right.                                                                                                      |
