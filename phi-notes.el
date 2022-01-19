@@ -322,12 +322,12 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                                  "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re)))
         (match-string-no-properties 1))))
 
-(defun phi--is-project (id)
+(defun phi--is-project-p (id)
   (string-match-p (concat phi-tag-symbol phi-project-tag) (phi--get-tags-from-note-as-str id)))
 
 (defun phi-get-ancestor-project-id (id)
   (and id
-       (or (phi--is-project id)
+       (or (and (phi--is-project-p id) id)
            (with-current-buffer (find-file-noselect (phi-matching-file-name id))
              (or (phi-get-linked-project-note-id)
                  (phi-get-ancestor-project-id (phi-get-parent-note-id)))))))
