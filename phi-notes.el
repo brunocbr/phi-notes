@@ -409,7 +409,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (kill-buffer "*PHI temp*")
     contents))
 
-(defun phi-has-tag-p (tag)
+(defun phi-has-tag (tag)
   (let ((tags (phi-get-note-field-contents phi-tags-field)))
     (string-match-p (concat phi-tag-symbol tag "\\b") tags)))
 
@@ -767,7 +767,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                (project-link (if current-projects ;; preppend to existing project list, if needed
                                (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
           (phi-set-note-field-contents phi-project-field project-link))))
-  (or (phi-has-tag-p phi-project-tag) ;; add project tag to current note, if needed
+  (or (phi-has-tag phi-project-tag) ;; add project tag to current note, if needed
       (phi-set-note-field-contents phi-tags-field (concat phi-tag-symbol phi-project-tag
                                                           " " (phi-get-note-field-contents phi-tags-field))))
   (helm-phi-insert-title-and-link-action candidate))
