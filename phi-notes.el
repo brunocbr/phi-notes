@@ -768,9 +768,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
           (phi-set-note-field-contents phi-project-field project-link))))
   (or (phi-has-tag-p phi-project-tag) ;; add project tag to current note, if needed
-      (phi-set-note-field-contents (concat phi-tag-symbol phi-project-tag
-                                           (and " " (phi-get-note-field-contents phi-tags-field))))
-  (helm-phi-insert-title-and-link-action candidate)))
+      (phi-set-note-field-contents phi-tags-field (concat phi-tag-symbol phi-project-tag
+                                                          " " (phi-get-note-field-contents phi-tags-field))))
+  (helm-phi-insert-title-and-link-action candidate))
 
 (defun helm-phi-find-note-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
