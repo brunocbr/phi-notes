@@ -409,6 +409,10 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (kill-buffer "*PHI temp*")
     contents))
 
+(defun phi-has-tag-p (tag)
+  (let ((tags (phi-get-note-field-contents phi-tags-field)))
+    (string-match-p (concat phi-tag-symbol tag "\\b") tags)))
+
 (defun phi-set-note-field-contents (field value)
   "Insert or update a field in the note's YAML frontmatter."
   (interactive)
@@ -762,8 +766,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (let* ((current-projects (phi-get-note-field-contents phi-project-field))
                (project-link (if current-projects ;; preppend to existing project list, if needed
                                (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
-        (phi-set-note-field-contents phi-project-field project-link))))
-  (helm-phi-insert-title-and-link-action candidate))
+          (phi-set-note-field-contents phi-project-field project-link))))
+  (or (phi-has-tag-p phi-project-tag) ;; add project tag to current note, if needed
+      (phi-set-note-field-contents (concat phi-tag-symbol phi-project-tag
+                                           (and " " (phi-get-note-field-contents phi-tags-field))))
+  (helm-phi-insert-title-and-link-action candidate)))
 
 (defun helm-phi-find-note-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
