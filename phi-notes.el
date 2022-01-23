@@ -752,7 +752,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
   "helm action to insert multiple titles and links"
-  (loop for cand in (helm-marked-candidates)
+  (cl-loop for cand in (helm-marked-candidates)
         do
         (with-current-buffer (current-buffer)
           (insert "- ") (helm-phi-insert-title-and-link-action cand) (newline))))
