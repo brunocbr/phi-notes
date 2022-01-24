@@ -14,6 +14,12 @@
   :type 'string
   :group 'phi-tinderbox)
 
+(defcustom phi-tinderbox-citekey-attr
+  "citekey"
+  "Attribute for citekeys"
+  :type 'string
+  :group 'phi-tinderbox)
+
 (defcustom phi-tinderbox-default-container
   "PHI Notes"
   "Default container for exported notes: note name or `nil' for the currently selected note."
@@ -63,12 +69,15 @@
                      (cons phi-tinderbox-zettel-attr (phi-get-current-note-id))
                      (cons phi-tinderbox-url-attr (concat phi-tinderbox-url-prefix (phi-get-current-note-id)))
                      (cons "ReadOnly" "true")
-                     (cons "Prototype" phi-tinderbox-default-prototype)))
+                     (cons "Prototype" phi-tinderbox-default-prototype)
+                     (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) nil))))
         (name (phi-get-current-note-title))
         (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
     ;; (when phi-tinderbox-default-prototype
     ;; (setq attributes (append attributes '(("Prototype" . phi-tinderbox-default-prototype)))))
     (tinderbox-initialize-attribute phi-tinderbox-zettel-attr "String")
+    (tinderbox-initialize-attribute phi-tinderbox-citekey-attr "String")
     (tinderbox-make-or-update-note name text (or container phi-tinderbox-default-container)
                                    (append attributes extra-attr))))
 
+(provide 'phi-tinderbox)
