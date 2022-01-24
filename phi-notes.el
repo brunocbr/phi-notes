@@ -525,9 +525,10 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive "r")
   (let ((body (buffer-substring-no-properties start end))
         (buffer (current-buffer)))
-    (phi-new-common-note body)
+    (phi-new-common-note body (phi-get-current-note-id) t)
     (with-current-buffer buffer
-      (kill-region start end))))
+      (kill-region start end))
+    (pop-to-buffer buffer)))
 
 ;;;###autoload
 (defun phi-yank-to-new-note ()
