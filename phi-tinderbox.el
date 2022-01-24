@@ -70,7 +70,7 @@
                      (cons phi-tinderbox-url-attr (concat phi-tinderbox-url-prefix (phi-get-current-note-id)))
                      (cons "ReadOnly" "true")
                      (cons "Prototype" phi-tinderbox-default-prototype)
-                     (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) nil))))
+                     (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) ""))))
         (name (phi-get-current-note-title))
         (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
     ;; (when phi-tinderbox-default-prototype
