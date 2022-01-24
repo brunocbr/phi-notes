@@ -136,6 +136,11 @@ Changing metadata and file names:
 | ----------- | ------------                                                                 |
 | `C-c R`     | `phi-rename-current-note`. Rename the current note, modifying its file name. |
 
+Editing:
+
+| Key binding | Description                                                                                         |
+| ----------- | ------------                                                                                        |
+| `C-c w`     | `phi-smart-copy-region`. Copy a version of the region, formatted for later quoting in another note. `(pp. 1-2)` will be converted to full pandoc citations, based on `citekey` field; the region will be prepended with a wikilink to the current note. |
 
 ## Anatomy of PHI notes
 
