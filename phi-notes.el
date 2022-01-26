@@ -243,13 +243,17 @@ tags:	 	%s
     (cadr (assoc (completing-read "Select a note repository: "
                                   phi-repository-alist) phi-repository-alist))))
 
+(defun phi--enforce-directory ()
+  "Try to make sure we are at the right directory"
+  (setq default-directory
+        (file-name-directory buffer-file-name)))
+
 (defun phi-notes-path (&optional usecontext)
   "Get the path for notes (usually the default directory).
 
 If optional USECONTEXT is not nil, enforce setting the default directory to the current note's directory"
   (if usecontext ;; (and usecontext phi-mode)
-      (setq default-directory
-            (file-name-directory buffer-file-name))) ;; enforce directory when visiting a PHI note
+      (phi--enforce-directory)) ;; enforce directory when visiting a PHI note
   (if (file-exists-p phi-counter-file)
       default-directory
     (setq default-directory (phi--prompt-for-notes-path))))
@@ -517,6 +521,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi-new-descendant-note ()
   "Create a child linked note. `C-u' to create note in other window."
   (interactive)
+  (phi--enforce-directory)
   (phi-new-common-note nil nil t))
 
 ;;;###autoload
@@ -525,6 +530,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive "r")
   (let ((body (buffer-substring-no-properties start end))
         (buffer (current-buffer)))
+    (phi--enforce-directory)
     (phi-new-common-note body (phi-get-current-note-id) t)
     (with-current-buffer buffer
       (kill-region start end))
@@ -535,6 +541,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   "Yank to linked note. `C-u' to create note in other window."
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
+    (phi--enforce-directory)
     (phi-new-common-note body nil nil)))
 
 (defun phi-pp-to-pandoc-cite (str citekey)
