@@ -415,7 +415,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 
 (defun phi-has-tag (tag)
   (let ((tags (phi-get-note-field-contents phi-tags-field)))
-    (string-match-p (concat phi-tag-symbol tag "\\b") tags)))
+    (not (null (string-match-p (concat phi-tag-symbol tag "\\b") tags)))))
 
 (defun phi-set-note-field-contents (field value)
   "Insert or update a field in the note's YAML frontmatter."
