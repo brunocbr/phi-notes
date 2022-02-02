@@ -544,23 +544,39 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (phi--enforce-directory)
     (phi-new-common-note body nil nil)))
 
-(defun phi-pp-to-pandoc-cite (str citekey)
+(defun phi--search-forward-pp ()
+  (re-search-forward "(\\(p\\{1,2\\}\.\\) +\\([0-9a-zA-Z\-,;\. ]+\\))" nil t))
+
+(defun phi--pandoc-cite (citekey &optional loc)
+  (if (and (not (null loc)) (not (string= loc "0")) (not (string= loc "")))
+      (format "[@%s, %s]" citekey loc)
+  (format "[@%s]" citekey)))
+
+(defun phi-pp-to-pandoc-cite (str citekey &optional loc)
+  (let ((found nil))
   (with-temp-buffer
     (insert str)
     (goto-char (point-min))
-    (while (re-search-forward "(\\(p\\{1,2\\}\.\\) +\\([0-9a-zA-Z\-,;\. ]+\\))" nil t)
-      (replace-match (format "[@%s, %s %s]" citekey (match-string 1)
-                             (match-string 2))))
-    (buffer-string)))
+    (save-excursion
+      (while (phi--search-forward-pp)
+        (setq found t)
+        (replace-match (format "[@%s, %s %s]" citekey (match-string 1)
+                               (match-string 2)))))
+    (unless found
+      (goto-char (point-max))
+      (re-search-backward "\\." nil t) ;; best place do insert a citation should be before the last period
+      (insert (concat " " (phi--pandoc-cite citekey loc))))
+    (buffer-string))))
 
 (defun phi-smart-copy-region (start end)
   "Copy region to kill ring formatted for later quoting."
   (interactive "r")
   (let ((citekey (phi-get-note-field-contents phi-citekey-field))
+        (loc (phi-get-note-field-contents phi-loc-field))
         (id (phi-get-current-note-id))
         (region (filter-buffer-substring start end)))
     (let ((str (format "[[%s]]: %s"
-                      id (if citekey (phi-pp-to-pandoc-cite region citekey) region))))
+                      id (if citekey (phi-pp-to-pandoc-cite region citekey loc) region))))
     ;; reproduce copy-region-as-kill
       (if (eq last-command 'phi-smart-copy-region)
           (kill-append str (< end beg))
