@@ -554,19 +554,19 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 
 (defun phi-pp-to-pandoc-cite (str citekey &optional loc)
   (let ((found nil))
-  (with-temp-buffer
-    (insert str)
-    (goto-char (point-min))
-    (save-excursion
-      (while (phi--search-forward-pp)
-        (setq found t)
-        (replace-match (format "[@%s, %s %s]" citekey (match-string 1)
-                               (match-string 2)))))
-    (unless found
-      (goto-char (point-max))
-      (re-search-backward "\\." nil t) ;; best place do insert a citation should be before the last period
-      (insert (concat " " (phi--pandoc-cite citekey loc))))
-    (buffer-string))))
+    (with-temp-buffer
+      (insert str)
+      (goto-char (point-min))
+      (save-excursion
+        (while (phi--search-forward-pp)
+          (setq found t)
+          (replace-match (format "[@%s, %s %s]" citekey (match-string 1)
+                                 (match-string 2)))))
+      (unless found
+        (goto-char (point-max))
+        (re-search-backward "\\." nil t) ;; best place do insert a citation should be before the last period
+        (insert (concat " " (phi--pandoc-cite citekey loc))))
+      (buffer-string))))
 
 (defun phi-smart-copy-region (start end)
   "Copy region to kill ring formatted for later quoting."
