@@ -73,8 +73,6 @@
                      (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) ""))))
         (name (phi-get-current-note-title))
         (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
-    ;; (when phi-tinderbox-default-prototype
-    ;; (setq attributes (append attributes '(("Prototype" . phi-tinderbox-default-prototype)))))
     (tinderbox-initialize-attribute phi-tinderbox-zettel-attr "String")
     (tinderbox-initialize-attribute phi-tinderbox-citekey-attr "String")
     (tinderbox-make-or-update-note name text (or container phi-tinderbox-default-container)
