@@ -68,7 +68,7 @@ cd local
 git clone https://github.com/brunocbr/phi-notes.git
 ```
 
-Open your `.spacemacs` configuration (`M-m f e d`) and add `phi` to `dotspacemacs-configuration-layers`. Restart emacs or reload the configuration (`M-m f e R`).
+Open your `.spacemacs` configuration (`M-m f e d`) and add `phi` as an element in the `dotspacemacs-configuration-layers` list. Restart emacs or reload the configuration (`M-m f e R`).
 
 ### Configure your note repository
 
