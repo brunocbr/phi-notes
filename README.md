@@ -33,7 +33,7 @@ For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-l
 (with-eval-after-load 'helm-bibtex
   (helm-bibtex-helmify-action bibtex-completion-create-phi-note helm-bibtex-create-phi-note)
 
-  (helm-add-action-to-source'
+  (helm-add-action-to-source
    "Create PHI bibliographical annotation" 'helm-bibtex-create-phi-note
    helm-source-bibtex 1))
 
