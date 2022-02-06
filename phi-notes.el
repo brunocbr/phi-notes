@@ -511,11 +511,11 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (select-window w))))
 
 ;;;###autoload
-(defun phi-new-originating-note ()
+(defun phi-new-originating-note (&optional body)
   "Create an originating note. `C-u' to create note in other window."
   (interactive)
   (setq default-directory (phi--prompt-for-notes-path))
-  (phi-new-common-note nil ""))
+  (phi-new-common-note body ""))
 
 ;;;###autoload
 (defun phi-new-descendant-note ()
@@ -895,7 +895,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (require 'helm-source)
   (interactive)
 
-  (helm :sources (helm-build-sync-source "PHI Notes"
+  (helm :sources (list (helm-build-sync-source "PHI Notes"
                    :candidates 'helm-phi-source-data-with-tags
                    :candidate-transformer 'helm-phi-candidates-transformer
                    :action (helm-make-actions "Open note"
@@ -906,7 +906,11 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                               'helm-phi-insert-titles-and-links-action
                                               "Insert & assign to this project"
                                               'helm-phi-insert-and-assign-action))
-        :buffer "*helm phi notes"
+                   (helm-build-dummy-source "Create a new note"
+                     :action (helm-make-actions "Create a new note"
+                                                'phi-new-originating-note))
+                   )
+        :buffer "*helm phi notes*"
         :input input))
 
 ;;;###autoload
