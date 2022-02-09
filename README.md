@@ -51,7 +51,7 @@ For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-l
 And this to `keybindings.el`:
 
 ```lisp
-(spacemacs/set-leader-keys "az" 'helm-phi-open-repo)
+(spacemacs/set-leader-keys "az" 'helm-phi-find)
 (spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
 (global-set-key (kbd "C-c )") 'helm-bibtex)
 ```
@@ -88,7 +88,7 @@ Open a repository:
 
 | Key binding                            | Description                                                                        |
 | -----------                            | -----------                                                                        |
-| `M-m a z` (or other global keybinding) | `helm-phi-open-repo`. Prompt for a repository and search its notes by id, title or tags (`helm` actions may be used, see below). |
+| `M-m a z` (or other global keybinding) | `helm-phi-find`. Search all repositories by title or tags, or create a new note. (`helm` actions may be used, see below).        |
 
 Navigation:
 
