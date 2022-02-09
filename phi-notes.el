@@ -745,23 +745,24 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (let (contents)
     ;; Contents
     (setq contents (phi--get-tags-from-file-as-str file))
-    (puthash file contents phi-hash-contents)))
+      (puthash (expand-file-name file) contents phi-hash-contents)))
 
 (defun phi-cache-file (file)
   "Update file cache if FILE exists."
   (let ((mtime-cache (gethash file phi-hash-mtimes))
-        (mtime-file (nth 5 (file-attributes (file-truename file)))))
+        (mtime-file (nth 6 (file-attributes (file-truename file)))))
     (if (or (not mtime-cache)
             (time-less-p mtime-cache mtime-file))
-        (phi-cache-newer-file file mtime-file))))
+        (phi-cache-newer-file (expand-file-name file) mtime-file))))
 
 (defun phi-cache-get-contents (file)
   "Get cached contents for corresponding `FILE'"
-  (gethash (expand-file-name file) phi-hash-contents))
+  (or (gethash (expand-file-name file) phi-hash-contents)
+      (phi-cache-file file)))
 
 (defun phi-cache-refresh-dir-maybe (dir)
   (let ((mtime-cache (gethash (expand-file-name dir) phi-hash-mtimes))
-        (mtime-file (nth 5 (file-attributes (expand-file-name dir)))))
+        (mtime-file (nth 6 (file-attributes (expand-file-name dir)))))
     (if (or (not mtime-cache)
             (time-less-p mtime-cache mtime-file))
         (progn
@@ -781,7 +782,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     filename))
 
 (defun helm-ag-phi-insert-link-action (candidate)
-  (let ((filename (helm-phi--get-file-name candidate)))
+  (let ((filename (file-name-nondirectory (helm-phi--get-file-name candidate))))
     (string-match (helm-phi--extract-id-from-cadidate-re) filename)
     (let* ((id (match-string-no-properties 1 filename))
            (wikilink (concat phi-link-left-bracket-symbol
@@ -790,13 +791,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         (insert wikilink)))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
-  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
-    (let* ((id (match-string-no-properties 1 candidate))
-           (title (match-string-no-properties 2 candidate))
+  (let ((filename (file-name-nondirectory (helm-phi--get-file-name candidate))))
+  (string-match (helm-phi--extract-id-from-cadidate-re) filename)
+    (let* ((id (match-string-no-properties 1 filename))
+           (title (match-string-no-properties 2 filename))
            (wikilink (concat phi-link-left-bracket-symbol
                              id phi-link-right-bracket-symbol)))
       (with-current-buffer (current-buffer)
-        (insert (concat title " " wikilink)))))
+        (insert (concat title " " wikilink))))))
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
   "helm action to insert multiple titles and links"
@@ -821,24 +823,45 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm-phi-insert-title-and-link-action candidate))
 
 (defun helm-phi-find-note-action (candidate)
-  (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
-  (switch-to-buffer (find-file-noselect (phi-matching-file-name (match-string-no-properties 1 candidate)))))
+  (setq default-directory (file-name-directory candidate))
+  (let ((file (file-name-nondirectory candidate)))
+    (string-match (helm-phi--extract-id-from-cadidate-re) file)
+    (switch-to-buffer (find-file-noselect (phi-matching-file-name (match-string-no-properties 1 file))))))
 
-(defun helm-phi-source-data-sorted ()
+(defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
-          (sort (directory-files-and-attributes (expand-file-name (phi-notes-path))
+          (sort (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
                                                 nil (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
                 #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
 
 
-(defun helm-phi-source-data-with-tags ()
-  (phi-cache-refresh-dir-maybe (phi-notes-path))
+(defun helm-phi-source-data-with-tags (&optional path)
+  (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
+  (when path (setq default-directory path))
   (mapcar #'(lambda (x) (cons (format "%s::%s" x (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
-                                            (phi-cache-get-contents x)
-                                               "")) x))
-          (helm-phi-source-data-sorted)))
+                                                  (phi-cache-get-contents x)
+                                                  "")) (expand-file-name x)))
+          (helm-phi-source-data-sorted path)))
 
-
+(defun helm-phi--build-sources ()
+  (append
+   (cl-loop
+    for repo in phi-repository-alist
+    collect (helm-build-sync-source (car repo)
+              :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
+              :candidate-transformer 'helm-phi-candidates-transformer
+              :action (helm-make-actions "Open note"
+                                         'helm-phi-find-note-action
+                                         "Insert link to note"
+                                         'helm-ag-phi-insert-link-action
+                                         "Insert title(s) & link(s)"
+                                         'helm-phi-insert-titles-and-links-action
+                                         "Insert & assign to this project"
+                                         'helm-phi-insert-and-assign-action)))
+   (list 
+    (helm-build-dummy-source "Create a new note"
+      :action (helm-make-actions "Create a new note"
+                                 'phi-new-originating-note)))))
 
 (defun helm-phi-formatter (candidate)
   (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)$")
@@ -846,17 +869,17 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (let ((width (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
           (display (car candidate)))
       (cons
-      (concat
-       (truncate-string-to-width 
-        (format "%s %s"
-                (propertize (match-string 1 display) 'face 'helm-grep-lineno)
-                (propertize (match-string 2 display) 'face 'helm-moccur-buffer)) width nil ?\s t
-                #'helm-moccur-buffer)
-       " "
-       (truncate-string-to-width
-        (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil nil t
-        #'font-lock-keyword-face))
-      (cdr candidate)))))
+       (concat
+        (truncate-string-to-width 
+         (format "%s %s"
+                 (propertize (match-string 1 display) 'face 'helm-grep-lineno)
+                 (propertize (match-string 2 display) 'face 'helm-moccur-buffer)) width nil ?\s t
+                 #'helm-moccur-buffer)
+        " "
+        (truncate-string-to-width
+         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil nil t
+         #'font-lock-keyword-face))
+       (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
   "Format CANDIDATES for display in helm."
@@ -894,22 +917,32 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-find (&optional input)
   (require 'helm-source)
   (interactive)
+  (helm :sources
+;;        (append
+         (helm-phi--build-sources)
+;;         (helm-build-dummy-source "create a new note"
+;;           :action (helm-make-actions "create a new note"
+;;                                      'phi-new-originating-note))
+;;         )
 
-  (helm :sources (list (helm-build-sync-source "PHI Notes"
-                   :candidates 'helm-phi-source-data-with-tags
-                   :candidate-transformer 'helm-phi-candidates-transformer
-                   :action (helm-make-actions "Open note"
-                                              'helm-phi-find-note-action
-                                              "Insert link to note"
-                                              'helm-ag-phi-insert-link-action
-                                              "Insert title(s) & link(s)"
-                                              'helm-phi-insert-titles-and-links-action
-                                              "Insert & assign to this project"
-                                              'helm-phi-insert-and-assign-action))
-                   (helm-build-dummy-source "Create a new note"
-                     :action (helm-make-actions "Create a new note"
-                                                'phi-new-originating-note))
-                   )
+
+
+                  ;; (list (helm-build-sync-source "PHI Notes"
+                  ;;  :candidates 'helm-phi-source-data-with-tags
+                  ;;  :candidate-transformer 'helm-phi-candidates-transformer
+                  ;;  :action (helm-make-actions "Open note"
+                  ;;                             'helm-phi-find-note-action
+                  ;;                             "Insert link to note"
+                  ;;                             'helm-ag-phi-insert-link-action
+                  ;;                             "Insert title(s) & link(s)"
+                  ;;                             'helm-phi-insert-titles-and-links-action
+                  ;;                             "Insert & assign to this project"
+                  ;;                             'helm-phi-insert-and-assign-action))
+                  ;;  (helm-build-dummy-source "Create a new note"
+                  ;;    :action (helm-make-actions "Create a new note"
+                  ;;                               'phi-new-originating-note))
+                  ;;  )
+
         :buffer "*helm phi notes*"
         :input input))
 
