@@ -918,31 +918,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (require 'helm-source)
   (interactive)
   (helm :sources
-;;        (append
          (helm-phi--build-sources)
-;;         (helm-build-dummy-source "create a new note"
-;;           :action (helm-make-actions "create a new note"
-;;                                      'phi-new-originating-note))
-;;         )
-
-
-
-                  ;; (list (helm-build-sync-source "PHI Notes"
-                  ;;  :candidates 'helm-phi-source-data-with-tags
-                  ;;  :candidate-transformer 'helm-phi-candidates-transformer
-                  ;;  :action (helm-make-actions "Open note"
-                  ;;                             'helm-phi-find-note-action
-                  ;;                             "Insert link to note"
-                  ;;                             'helm-ag-phi-insert-link-action
-                  ;;                             "Insert title(s) & link(s)"
-                  ;;                             'helm-phi-insert-titles-and-links-action
-                  ;;                             "Insert & assign to this project"
-                  ;;                             'helm-phi-insert-and-assign-action))
-                  ;;  (helm-build-dummy-source "Create a new note"
-                  ;;    :action (helm-make-actions "Create a new note"
-                  ;;                               'phi-new-originating-note))
-                  ;;  )
-
         :buffer "*helm phi notes*"
         :input input))
 
