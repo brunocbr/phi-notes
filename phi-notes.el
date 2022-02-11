@@ -716,6 +716,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun bibtex-completion-create-phi-note (keys)
   "Create a PHI bibliographical annotation note with the first entry in KEYS."
+  (phi--enforce-directory)
   (let* ((key (nth 0 keys))
          (entry (bibtex-completion-get-entry key))
          (year (or (bibtex-completion-get-value "year" entry)
