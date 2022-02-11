@@ -762,7 +762,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun phi-cache-refresh-dir-maybe (dir)
   (let ((mtime-cache (gethash (expand-file-name dir) phi-hash-mtimes))
-        (mtime-file (nth 6 (file-attributes (expand-file-name dir)))))
+        (mtime-file (nth 5 (file-attributes (expand-file-name dir)))))
     (if (or (not mtime-cache)
             (time-less-p mtime-cache mtime-file))
         (progn
