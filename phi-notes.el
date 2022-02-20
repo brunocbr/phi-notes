@@ -575,7 +575,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (loc (phi-get-note-field-contents phi-loc-field))
         (id (phi-get-current-note-id))
         (region (filter-buffer-substring start end)))
-    (let ((str (format "[[%s]]: %s"
+    (let ((str (format "[[%s]] %s"
                       id (if citekey (phi-pp-to-pandoc-cite region citekey loc) region))))
     ;; reproduce copy-region-as-kill
       (if (eq last-command 'phi-smart-copy-region)
