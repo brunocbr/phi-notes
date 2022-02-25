@@ -19,6 +19,13 @@ Recomended usage with `olivetti-mode`, `helm`, `helm-ag` and `helm-bibtex`.
 
 ## Setup
 
+### Configure your note repository
+
+To create or add an existing note repository, use `M-x phi-add-repository`. It will prompt for a name, a directory and for the (initial) value of the counter. If you want to use timestamp ids, type `TIMESTAMP` instead of a numerical value. The function will create the counter for you, if needed. Then you'll see the variable customization page for `phi-repository-alist`. The list will contain lists of elements consisting in the repository names, directories and "master note" ids (this is the default note displayed in the sidebar in absence of a project or parent note). Check if everything is ok and don't forget to **Apply and Save** your settings.
+
+A `.counter` file is kept in the same directory of your notes in order to keep the value of the incremental counter used for generating note ids. You can manually initialize it or edit it if you want, by means of the interactive function `M-x phi-initialize-counter`.
+
+
 ### Package instalation
 
 For Spacemacs, I'd recommend creating a layer (`M-x configuration-layer/create-layer`) under  `~/.emacs.d/private/phi`. Add the following to `packages.el`:
@@ -68,12 +75,6 @@ git clone https://github.com/brunocbr/phi-notes.git
 ```
 
 Open your `.spacemacs` configuration (`M-m f e d`) and add `phi` as an element in the `dotspacemacs-configuration-layers` list. Restart emacs or reload the configuration (`M-m f e R`).
-
-### Configure your note repository
-
-A `.counter` file is kept in the same directory of your notes in order to keep the value of the incremental counter used for generating note ids. You can manually initialize it or edit it if you want, by means of the interactive function `M-x phi-initialize-counter`.
-
-To create or add an existing note repository, use `M-x phi-add-repository`. It will prompt for a name, a directory and for the (initial) value of the counter. If you want to use timestamp ids, type `TIMESTAMP` instead of a numerical value. The function will create the counter for you, if needed. Then you'll see the variable customization page for `phi-repository-alist`. The list will contain lists of elements consisting in the repository names, directories and "master note" ids (this is the default note displayed in the sidebar in absence of a project or parent note). Check if everything is ok and don't forget to **Apply and Save** your settings.
 
 ## Usage
 
