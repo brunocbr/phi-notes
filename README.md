@@ -75,9 +75,6 @@ A `.counter` file is kept in the same directory of your notes in order to keep t
 
 To create or add an existing note repository, use `M-x phi-add-repository`. It will prompt for a name, a directory and for the (initial) value of the counter. If you want to use timestamp ids, type `TIMESTAMP` instead of a numerical value. The function will create the counter for you, if needed. Then you'll see the variable customization page for `phi-repository-alist`. The list will contain lists of elements consisting in the repository names, directories and "master note" ids (this is the default note displayed in the sidebar in absence of a project or parent note). Check if everything is ok and don't forget to **Apply and Save** your settings.
 
-If you have more than one repository set, you'll be prompted to chose from a list both when globally invoking `helm-phi-open-repo` (`M-m a z`) and when creating independent, "originating" notes (`M-m C o`). All the other functionalities are sensitive to the context of the file currently being visited.
-
-
 ## Usage
 
 ### Key bindings
