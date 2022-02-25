@@ -52,7 +52,6 @@ And this to `keybindings.el`:
 
 ```lisp
 (spacemacs/set-leader-keys "aF" 'helm-phi-find)
-(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
 (global-set-key (kbd "C-c )") 'helm-bibtex)
 ```
 
