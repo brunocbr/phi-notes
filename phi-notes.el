@@ -931,7 +931,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 ;;;###autoload
 (defun helm-phi-insert ()
-  "Calls `helm-phi-find' considering the current note's context"
+  "Calls `helm-phi-find' considering the current note's context (DEPRECATED)"
   (interactive)
   (if phi-mode
       (setq default-directory (file-name-directory buffer-file-name)))
@@ -966,7 +966,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
-    (define-key map (kbd "C-c i") #'helm-phi-insert)
     (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
     (define-key map (kbd "C-c f t") #'helm-phi-find-like-tags)
     (define-key map (kbd "C-c f f") #'helm-ag-phi-find)

@@ -114,11 +114,10 @@ Creating notes:
 
 You may also create [bibliographical annotation notes](#bibliographical-annotation) from `helm-bibtex` (bound to `C-c )`); see below.
 
-Searching and inserting links to other notes:
+Searching notes:
 
 | Key binding | Description                                                                                                                                                                                                                   |
 | ----------- | -----------                                                                                                                                                                                                                   |
-| `C-c i`     | `helm-phi-insert`. Search by note title, id or tags. Insert wikilinks with `helm` actions (see below).  |
 | `C-c f f`   | `helm-ag-phi-find`. Search the contents of the repository with `helm-ag`. You may configure it for different engines (such as `ripgrep`).                                                                                     |
 | `C-c f b`   | `helm-ag-phi-find-backlinks`. Search the notes for links pointing to the current one.                                                                                                                                         |
 | `C-c f t`   | `helm-phi-find-like-tags`. Search notes with similar tags.                                                                                                                                
