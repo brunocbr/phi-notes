@@ -571,7 +571,6 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi-smart-copy-region (start end)
   "Copy region to kill ring formatted for later quoting."
   (interactive "r")
-  (message (format "Start %d end %d" start end))
   (let ((citekey (phi-get-note-field-contents phi-citekey-field))
         (loc (phi-get-note-field-contents phi-loc-field))
         (id (phi-get-current-note-id))
