@@ -590,6 +590,11 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (phi--search-forward-pp)
   (phi-smart-copy-region (- (match-beginning 1) 1) (+ (match-end 2) 1)))
 
+(defun phi-copy-wikilink ()
+  "Copy a wikilink to the current note to the kill buffer"
+  (interactive)
+  (kill-new (format "[[%s]]" (phi-get-current-note-id))))
+
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup phi-sidebar ()
@@ -977,6 +982,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c R") #'phi-rename-current-note)
     (define-key map (kbd "C-c w") #'phi-smart-copy-region)
     (define-key map (kbd "C-c M-w") #'phi-smart-copy-ref-at-point)
+    (define-key map (kbd "C-c l") #'phi-copy-wikilink)
     map)
   "Main mode map for `phi-mode'.")
 
