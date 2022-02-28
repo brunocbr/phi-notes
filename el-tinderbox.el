@@ -6,8 +6,12 @@
   (with-temp-buffer
     (insert str)
     (goto-char (point-min))
-    (while (search-forward "\"" nil t)
-      (replace-match "\\\"" "FIXEDCASE" "LITERAL"))
+    (save-excursion
+      (while (search-forward "\"" nil t)
+        (replace-match "\\\"" "FIXEDCASE" "LITERAL")))
+    (save-excursion
+      (while (search-forward "\\" nil t)
+        (replace-match "\\\\\\\\" "FIXEDCASE" "LITERAL")))
     (buffer-string)))
 
 (defun tinderbox-applescript--quoted-string (str)
