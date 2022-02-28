@@ -136,7 +136,9 @@ Editing:
 | Key binding | Description                                                                                                                                                                                                                                             |
 |-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `C-c w`     | `phi-smart-copy-region`. Copy a version of the region, formatted for later quoting in another note. `(pp. 1-2)` will be converted to full pandoc citations, based on `citekey` field; the region will be prepended with a wikilink to the current note. |
-| `C-c M-w`   | `phi-smart-copy-ref-at-point`. Copy a formatted version of the next page reference at point. |
+| `C-c M-w`   | `phi-smart-copy-ref-at-point`. Copy a formatted version of the next page reference at point.                                                                                                                                                            |
+| `C-c l`     | `phi-copy-wikilink`. Copy a wikilink to the current note to the kill buffer.                                                                                                                                                                            |
+
 
 ## Anatomy of PHI notes
 
