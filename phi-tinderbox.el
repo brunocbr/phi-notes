@@ -32,7 +32,6 @@
   :type 'string
   :group 'phi-tinderbox)
 
-
 (defcustom phi-tinderbox-url-attr
   "URL"
   "Attribute for note URLs"
@@ -61,6 +60,11 @@
           (delete-region (point-min) (point)))
     (buffer-string)))
 
+(defun phi-tinderbox--initialize-tlg-attributes ()
+  (tinderbox-initialize-attribute phi-tlg-ref-field "String")
+  (tinderbox-initialize-attribute phi-tlg-section-field "String")
+  (tinderbox-initialize-attribute phi-tlg-line-field "Number"))
+
 ;;;###autoload
 (defun phi-tinderbox-export-current-note (&optional container extra-attr)
   "Export the current note to Tinderbox"
@@ -75,7 +79,8 @@
         (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
     (tinderbox-initialize-attribute phi-tinderbox-zettel-attr "String")
     (tinderbox-initialize-attribute phi-tinderbox-citekey-attr "String")
+    (phi-tinderbox--initialize-tlg-attributes)
     (tinderbox-make-or-update-note name text (or container phi-tinderbox-default-container)
-                                   (append attributes extra-attr))))
+                                   (append attributes (phi-get-current-note-tlg-fields) extra-attr))))
 
 (provide 'phi-tinderbox)

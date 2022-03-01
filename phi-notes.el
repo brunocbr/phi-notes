@@ -189,6 +189,29 @@ tags:	 	%s
   :group 'phi)
 
 
+(defgroup phi-tlg ()
+  "TLG (Thesaurus Linguae Graecae) support"
+  :group 'phi)
+
+(defcustom phi-tlg-ref-field
+  "ref_tlg"
+  "Field for TLG reference of the sort 0059:031"
+  :type 'string
+  :group 'phi-tlg)
+
+(defcustom phi-tlg-section-field
+  "section"
+  "Field for TLG section"
+  :type 'string
+  :group 'phi-tlg)
+
+(defcustom phi-tlg-line-field
+  "line"
+  "Field for TLG line"
+  :type 'string
+  :group 'phi-tlg)
+
+
 (defcustom phi-mode-lighter "Φ"
   "Mode-line indicator for `phi-mode'."
   :type '(choice (const :tag "No lighter" "") string)
@@ -301,6 +324,13 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (let ((filename (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
     (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") filename)
         (match-string-no-properties 2 filename))))
+
+(defun phi-get-current-note-tlg-fields ()
+  "Get the TLG fields for the current note in as plist"
+  (let ((data  (list :tlg-ref (phi-get-note-field-contents phi-tlg-ref-field)
+             :tlg-section (phi-get-note-field-contents phi-tlg-section-field)
+             :tlg-line (phi-get-note-field-contents phi-tlg-line-field))))
+    data))
 
 ;;;###autoload
 (defun phi-buffer-repository (&optional buf)
@@ -459,24 +489,39 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (rename-file (buffer-file-name) new-file-name)
         (set-visited-file-name new-file-name)))))
 
-(defun phi-create-common-note (id title &optional parent tags citekey loc body)
+(defun phi-create-common-note (&rest args)
   "Create a common note buffer"
   (interactive)
-  (with-current-buffer (generate-new-buffer "New PHI Note")
-    (insert (format phi-header-pre
-                    title id))
-    (when citekey (insert (concat phi-citekey-field ":\t" (replace-regexp-in-string "\s+$" "" citekey) "  \n")))
-    (when loc (insert (concat phi-loc-field ":\t\t" (replace-regexp-in-string "\s+$" "" loc) "  \n")))
-    (insert (format phi-header-post tags))
-    (insert (phi-construct-breadcrumb parent))
-    (insert "\
+  (let ((id (plist-get args :id))
+        (title (plist-get args :title))
+        (parent (plist-get args :parent))
+        (tags (plist-get args :tags))
+        (citekey (plist-get args :citekey))
+        (loc (plist-get args :loc))
+        (body (plist-get args :body))
+        (tlg-fields (plist-get args :tlg-fields)))
+    (with-current-buffer (generate-new-buffer "New PHI Note")
+      (insert (format phi-header-pre
+                      title id))
+      (when citekey (insert (concat phi-citekey-field ":\t" (replace-regexp-in-string "\s+$" "" citekey) "  \n")))
+      (when loc (insert (concat phi-loc-field ":\t\t" (replace-regexp-in-string "\s+$" "" loc) "  \n")))
+      (when tlg-fields
+        (let ((tlg-ref (plist-get tlg-fields :tlg-ref))
+              (tlg-section (or (plist-get tlg-fields :tlg-section) ""))
+              (tlg-line (or (plist-get tlg-fields :tlg-line) "")))
+          (insert (concat phi-tlg-ref-field ":\t" (replace-regexp-in-string "\s+$" "" tlg-ref) "  \n"))
+          (insert (concat phi-tlg-section-field ":\t" (replace-regexp-in-string "\s+$" "" tlg-section) "  \n"))
+          (insert (concat phi-tlg-line-field ":\t\t" (replace-regexp-in-string "\s+$" "" tlg-line) "  \n"))))
+      (insert (format phi-header-post tags))
+      (insert (phi-construct-breadcrumb parent))
+      (insert "\
 
 
 ")
-    (when body (insert body))
-    (write-file (concat (phi-notes-path) "/" id " " title "." phi-default-file-extension))
-    (phi-mode)
-    (current-buffer)))
+      (when body (insert body))
+      (write-file (concat (phi-notes-path) "/" id " " title "." phi-default-file-extension))
+      (phi-mode)
+      (current-buffer))))
 
 (defun phi-extract-title-from-body (body)
   "Extract title from the first line of `body'"
@@ -493,13 +538,14 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
+        (tlg-fields (phi-get-current-note-tlg-fields))
         (id (phi-get-counter))
         (buffer nil)
         (w nil))
     (unless parent (setq parent (phi-get-current-note-id)))
-    (setq buffer (phi-create-common-note id title parent tags
-                                         (unless (string= citekey "") citekey) (unless (string= loc "") loc)
-                                         body))
+    (setq buffer (phi-create-common-note :id id :title title :parent parent :tags tags
+                                                :citekey (unless (string= citekey "") citekey) :loc (unless (string= loc "") loc)
+                                                :body body (when (cadr tlg-fields) :tlg-fields tlg-fields))
     (unless (equal "" parent)
       (insert (concat (when insert-title (concat title " "))
                       phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
@@ -542,6 +588,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
     (phi--enforce-directory)
+    ;; (phi-new-common-note body nil nil)))
     (phi-new-common-note body nil nil)))
 
 (defun phi--search-forward-pp ()
