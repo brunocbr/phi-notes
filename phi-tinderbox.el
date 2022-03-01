@@ -65,6 +65,12 @@
   (tinderbox-initialize-attribute phi-tlg-section-field "String")
   (tinderbox-initialize-attribute phi-tlg-line-field "Number"))
 
+(defun phi-tinderbox--get-current-note-tlg-attributes ()
+  (let ((tlg-fields (phi-get-current-note-tlg-fields)))
+    (list (cons phi-tlg-ref-field (getf tlg-fields :tlg-ref))
+          (cons phi-tlg-section-field (getf tlg-fields :tlg-section))
+          (cons phi-tlg-line-field (getf tlg-fields :tlg-line)))))
+
 ;;;###autoload
 (defun phi-tinderbox-export-current-note (&optional container extra-attr)
   "Export the current note to Tinderbox"
@@ -75,12 +81,13 @@
                      (cons "ReadOnly" "true")
                      (cons "Prototype" phi-tinderbox-default-prototype)
                      (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) ""))))
+        (tlg-attr (phi-tinderbox--get-current-note-tlg-attributes))
         (name (phi-get-current-note-title))
         (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
     (tinderbox-initialize-attribute phi-tinderbox-zettel-attr "String")
     (tinderbox-initialize-attribute phi-tinderbox-citekey-attr "String")
     (phi-tinderbox--initialize-tlg-attributes)
     (tinderbox-make-or-update-note name text (or container phi-tinderbox-default-container)
-                                   (append attributes (phi-get-current-note-tlg-fields) extra-attr))))
+                                   (append attributes tlg-attr extra-attr))))
 
 (provide 'phi-tinderbox)
