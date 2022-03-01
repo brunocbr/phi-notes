@@ -588,7 +588,6 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
     (phi--enforce-directory)
-    ;; (phi-new-common-note body nil nil)))
     (phi-new-common-note body nil nil)))
 
 (defun phi--search-forward-pp ()
