@@ -205,6 +205,14 @@ proj:	[[7000]]
 | `proj`    | A sequence of wikilinks to the project(s) the note is assigned to.                                            |
 | `origin`  | A callback URL to open the source for the note, when it is created and maintained in an external application. `phi-mode` will turn the buffer read-only when this field is detected. |
 
+[TLG (Thesaurus Linguae Graecae)](http://stephanus.tlg.uci.edu/) support:
+
+| Key       | Description                                                  |
+| --------- | -----------                                                  |
+| `ref_tlg` | Reference to a work, e. g. `0059:031` for Plato's *Timaeus*. |
+| `section` | A section in a work, e. g. `27d`.                            |
+| `line`    | A line in a section, e. g. `5`.                              |
+
 
 
 
