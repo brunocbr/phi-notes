@@ -534,7 +534,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi-new-common-note (&optional body parent insert-title)
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
-  (let ((title (read-string "title: " (phi-extract-title-from-body body)))
+  (let* ((title (read-string "title: " (phi-extract-title-from-body body)))
         (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
