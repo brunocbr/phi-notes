@@ -554,7 +554,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                (not (equal (current-buffer) phi-sidebar-buffer)))
           (switch-to-buffer buffer)
         (pop-to-buffer buffer)
-        (select-window w))))
+        (select-window w)))))
 
 ;;;###autoload
 (defun phi-new-originating-note (&optional body)
