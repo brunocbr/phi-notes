@@ -783,7 +783,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          (tags (read-string "tags: " (concat phi-tag-symbol phi-annotation-tag)))
          (loc (read-string "loc: " "0"))
          (id (phi-get-counter))
-         (buffer (phi-create-common-note id note-title nil tags key loc nil)))
+         (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc)))
     (if (equal current-prefix-arg nil) ; no C-u
         (switch-to-buffer buffer)
       (pop-to-buffer buffer))))
