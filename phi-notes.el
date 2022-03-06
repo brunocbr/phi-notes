@@ -544,8 +544,9 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (w nil))
     (unless parent (setq parent (phi-get-current-note-id)))
     (setq buffer (phi-create-common-note :id id :title title :parent parent :tags tags
-                                                :citekey (unless (string= citekey "") citekey) :loc (unless (string= loc "") loc)
-                                                :body body (when (cadr tlg-fields) :tlg-fields tlg-fields))
+                                         (unless (string= citekey "") :citekey citekey)
+                                         (unless (string= loc "") :loc loc)
+                                         :body body (when (cadr tlg-fields) :tlg-fields tlg-fields))
     (unless (equal "" parent)
       (insert (concat (when insert-title (concat title " "))
                       phi-link-left-bracket-symbol id phi-link-right-bracket-symbol)))
