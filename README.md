@@ -9,7 +9,7 @@ This emacs package provides a `phi-mode` minor-mode for a Zettelkasten-style not
 - Notes may have tags (identified by `#hashtags`).
 - Notes have a YAML(ish) frontmatter to keep metadata and are (preferably, but not necessarily) written in Markdown.
 
-The aim of this project is to develop features to ease the creation, navigation and linking of notes in one or multiple note repositories. 
+The aim of this project is to develop features to ease the creation, navigation and linking of notes in one or multiple note repositories. It is opinionated for use in the Humanities research field (but not limited to it).
 
 A sidebar functionality makes the minor-mode particularly useful for working with structure notes:
 
