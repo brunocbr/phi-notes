@@ -642,6 +642,22 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive)
   (kill-new (format "[[%s]]" (phi-get-current-note-id))))
 
+(defun phi-remove-frontmatter (str)
+  (with-temp-buffer
+    (insert str)
+    (goto-char (point-min))
+    (when (looking-at-p "---") ;; remove YAML frontmatter
+      (forward-line 1)
+      (let  ((start-pos (point-min))
+             (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+        (delete-region start-pos yaml-end-pos)))
+    (goto-char (point-min))
+    (when (search-forward-regexp (concat "^[" phi-originating-symbol
+                                         phi-parent-symbol "]") nil) ;; remove breadcrumb
+      (move-end-of-line nil)
+      (delete-region (point-min) (point)))
+    (buffer-string)))
+
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup phi-sidebar ()

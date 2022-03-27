@@ -44,22 +44,6 @@
   :type 'string
   :group 'phi-tinderbox)
 
-(defun phi-tinderbox-remove-frontmatter (str)
-  (with-temp-buffer
-    (insert str)
-    (goto-char (point-min))
-    (when (looking-at-p "---") ;; remove YAML frontmatter
-      (forward-line 1)
-      (let  ((start-pos (point-min))
-             (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
-        (delete-region start-pos yaml-end-pos)))
-    (goto-char (point-min))
-    (when (search-forward-regexp (concat "^[" phi-originating-symbol
-                                         phi-parent-symbol "]") nil) ;; remove breadcrumb
-          (move-end-of-line nil)
-          (delete-region (point-min) (point)))
-    (buffer-string)))
-
 (defun phi-tinderbox--initialize-tlg-attributes ()
   (tinderbox-initialize-attribute phi-tlg-ref-field "String")
   (tinderbox-initialize-attribute phi-tlg-section-field "String")
@@ -83,7 +67,7 @@
                      (cons phi-tinderbox-citekey-attr (or (phi-get-note-field-contents phi-citekey-field) ""))))
         (tlg-attr (phi-tinderbox--get-current-note-tlg-attributes))
         (name (phi-get-current-note-title))
-        (text (phi-tinderbox-remove-frontmatter (substring-no-properties (buffer-string)))))
+        (text (phi-remove-frontmatter (substring-no-properties (buffer-string)))))
     (tinderbox-initialize-attribute phi-tinderbox-zettel-attr "String")
     (tinderbox-initialize-attribute phi-tinderbox-citekey-attr "String")
     (phi-tinderbox--initialize-tlg-attributes)
