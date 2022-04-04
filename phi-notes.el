@@ -821,9 +821,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (setq contents (phi--get-tags-from-file-as-str file))
       (puthash (expand-file-name file) contents phi-hash-contents)))
 
+(defun phi-cache-get-mtime (file)
+  (gethash file phi-hash-mtimes))
+
 (defun phi-cache-file (file)
   "Update file cache if FILE exists."
-  (let ((mtime-cache (gethash file phi-hash-mtimes))
+  (let ((mtime-cache (phi-cache-get-mtime file))
         (mtime-file (nth 6 (file-attributes (file-truename file)))))
     (if (or (not mtime-cache)
             (time-less-p mtime-cache mtime-file))
@@ -924,6 +927,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     collect (helm-build-sync-source (car repo)
               :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
+              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
               :action (helm-make-actions "Open note"
                                          'helm-phi-find-note-action
                                          "Insert link to note"
@@ -960,6 +964,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop
    for entry in candidates
    collect (helm-phi-formatter entry)))
+
+(defun helm-phi-filtered-candidate-transformer (candidates source)
+  (sort candidates (lambda (y x) (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
 
 (defun helm-do-phi-ag (input)
   (require 'helm-ag)
