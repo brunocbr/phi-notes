@@ -672,7 +672,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
                                           (shell-quote-argument
                                            phi-tag-regex)
                                           " "
-                                          (phi-notes-path) " 2>/dev/null")))
+                                          (phi-notes-path 'enforce-path) " 2>/dev/null")))
          (tag-list (split-string tags "\n" t)))
     (delete-dups tag-list)))
 
