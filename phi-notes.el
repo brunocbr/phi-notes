@@ -171,6 +171,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-tag-regex "#[0-9a-zA-Z\u00c0-\u017f\u0370-\u03FF\u1F00-\u1FFF_\\./ƒ-]\\+"
+  "RegEx to identify a valid tag"
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-project-tag "proj"
   "Tag identification for projects"
   :type 'string
@@ -658,6 +663,26 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
       (delete-region (point-min) (point)))
     (buffer-string)))
 
+;; ideas from Grant Rosson's zk package
+
+(defun phi--grep-tag-list ()
+  "Return list of tags from all notes in phi directory."
+  (let* ((tags (shell-command-to-string (concat
+                                          "grep -I -ohir -e "
+                                          (shell-quote-argument
+                                           phi-tag-regex)
+                                          " "
+                                          (phi-notes-path) " 2>/dev/null")))
+         (tag-list (split-string tags "\n" t)))
+    (delete-dups tag-list)))
+
+;;;###autoload
+(defun phi-tag-insert ()
+  "Insert TAG at point.
+Select TAG, with completion, from list of all tags in phi notes."
+  (interactive)
+  (insert (completing-read "Tag: " (phi--grep-tag-list))))
+  
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup phi-sidebar ()
@@ -1053,6 +1078,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c w") #'phi-smart-copy-region)
     (define-key map (kbd "C-c M-w") #'phi-smart-copy-ref-at-point)
     (define-key map (kbd "C-c l") #'phi-copy-wikilink)
+    (define-key map (kbd "C-c t") #'phi-tag-insert)
     map)
   "Main mode map for `phi-mode'.")
 
