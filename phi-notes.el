@@ -171,7 +171,7 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-tag-regex "#[0-9a-zA-Z\\./-]\\+"
+(defcustom phi-tag-regex "#[0-9a-zA-Z\\./-_]\\+"
   "RegEx to identify a valid tag"
   :type 'string
   :group 'phi)
