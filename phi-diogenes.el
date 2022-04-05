@@ -34,8 +34,8 @@
   :type 'string
   :group 'phi-diogenes)
 
-(defun phi-tlg-start-diogenes ()
+(defun phi-diogenes-start-server ()
   (interactive)
-  (start-process-shell-command "tlg-diogenes" nil phi-diogenes-server-command))
+  (start-process-shell-command "phi-diogenes" nil phi-diogenes-server-command))
 
 (provide 'phi-diogenes)
