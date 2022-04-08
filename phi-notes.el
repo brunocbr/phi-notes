@@ -925,10 +925,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm-phi-insert-title-and-link-action candidate))
 
 (defun helm-phi-find-note-action (candidate)
-  (setq default-directory (file-name-directory candidate))
-  (let ((file (file-name-nondirectory candidate)))
-    (string-match (helm-phi--extract-id-from-cadidate-re) file)
-    (switch-to-buffer (find-file-noselect (phi-matching-file-name (match-string-no-properties 1 file))))))
+  (find-file candidate))
 
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
