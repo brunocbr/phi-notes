@@ -653,8 +653,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (interactive)
   (if (equal current-prefix-arg nil)
       (kill-new (format "[[%s]]" (phi-get-current-note-id)))
-    (kill-new (format "[%s](%s://%s)" (phi-get-current-note-title) phi-url-protocol
-                      (phi-get-current-note-id)))))
+    (kill-new (format "%s://%s" phi-url-protocol (phi-get-current-note-id)))))
 
 (defun phi-remove-frontmatter (str)
   (with-temp-buffer
