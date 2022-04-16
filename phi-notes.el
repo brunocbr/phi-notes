@@ -193,6 +193,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-url-protocol "x-phi"
+  "Custom URL protocol for notes."
+  :type 'stringp
+  :safe 'stringp
+  :group 'phi)
 
 (defgroup phi-tlg ()
   "TLG (Thesaurus Linguae Graecae) support"
@@ -644,9 +649,12 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (phi-smart-copy-region (- (match-beginning 1) 1) (+ (match-end 2) 1)))
 
 (defun phi-copy-wikilink ()
-  "Copy a wikilink to the current note to the kill buffer"
+  "Copy a wikilink to the current note to the kill buffer. C-u to copy URL with `phi-url-protocol'."
   (interactive)
-  (kill-new (format "[[%s]]" (phi-get-current-note-id))))
+  (if (equal current-prefix-arg nil)
+      (kill-new (format "[[%s]]" (phi-get-current-note-id)))
+    (kill-new (format "[%s](%s://%s)" (phi-get-current-note-title) phi-url-protocol
+                      (phi-get-current-note-id)))))
 
 (defun phi-remove-frontmatter (str)
   (with-temp-buffer
