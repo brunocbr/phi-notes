@@ -936,13 +936,18 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
           (sort (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
-                                                nil (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
+                                                t (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
                 #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
 
+(defun helm-phi-source-data-unsorted (&optional path)
+  (mapcar #'car
+       (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
+                                       t
+                                       (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)))
 
 (defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
-  (when path (setq default-directory path))
+;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
   (mapcar #'(lambda (x) (cons (format "%s::%s" x (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
                                                   (phi-cache-get-contents x)
                                                   "")) (expand-file-name x)))
@@ -994,7 +999,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    collect (helm-phi-formatter entry)))
 
 (defun helm-phi-filtered-candidate-transformer (candidates source)
-  (sort candidates (lambda (y x)
+  (sort (copy-seq candidates) (lambda (x y)
                      (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
 
 (defun helm-do-phi-ag (input)
