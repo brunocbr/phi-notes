@@ -988,7 +988,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                  #'helm-moccur-buffer)
         " "
         (truncate-string-to-width
-         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil ?\s t
+         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 3 width) nil ?\s t
          #'font-lock-keyword-face))
        (cdr candidate)))))
 
