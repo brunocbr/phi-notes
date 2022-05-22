@@ -960,7 +960,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     collect (helm-build-sync-source (car repo)
               :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
-              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
+;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
               :action (helm-make-actions "Open note"
                                          'helm-phi-find-note-action
                                          "Insert link to note"
@@ -999,6 +999,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    collect (helm-phi-formatter entry)))
 
 (defun helm-phi-filtered-candidate-transformer (candidates source)
+  "Not working -- why?"
   (sort (copy-seq candidates) (lambda (x y)
                      (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
 
