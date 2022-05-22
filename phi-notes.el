@@ -937,7 +937,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (mapcar #'car
           (sort (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
                                                 t (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
-                #'(lambda (x y) (time-less-p (nth 6 y) (nth 6 x))))))
+                #'(lambda (x y) (time-less-p (file-attribute-modification-time (cdr y)) (file-attribute-modification-time (cdr x)))))))
 
 (defun helm-phi-source-data-unsorted (&optional path)
   (mapcar #'car
@@ -988,7 +988,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                  #'helm-moccur-buffer)
         " "
         (truncate-string-to-width
-         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil nil t
+         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 2 width) nil ?\s t
          #'font-lock-keyword-face))
        (cdr candidate)))))
 
