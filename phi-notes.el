@@ -1,6 +1,6 @@
 ;;; phi-notes.el --- Zettelkasten note management -*- lexical-binding:t -*-
 
-;; Copyright (C) 2021  Bruno Conte
+;; Copyright (C) 2021-2022  Bruno Conte
 
 ;; Author: Bruno Conte <bruno@brunoc.com.br>
 ;; URL: https://github.com/brunocbr/phi-notes/
@@ -357,6 +357,10 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
   (nth 0 (file-name-all-completions id (phi-notes-path usecontext)))) ;; blank for current dir instead of phi-notes-path
 
+(defun phi-wiki-link-re ()
+  (concat phi-link-left-bracket-symbol-re
+          "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re))
+
 (defun phi-get-parent-note-id ()
   "Return the id for the parent note"
   (save-excursion
@@ -671,6 +675,18 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
       (delete-region (point-min) (point)))
     (buffer-string)))
 
+(defun phi-get-wiki-linked-ids (file)
+  "Return a sequence of unique ids referenced in `FILE'."
+  (with-current-buffer (find-file-noselect file)
+    (save-excursion
+      (goto-char (point-min))
+      (cl-remove-duplicates
+       (cl-loop while (re-search-forward (phi-wiki-link-re) nil t) collect
+                (save-excursion
+                  (re-search-backward (phi-wiki-link-re))
+                  (phi-get-next-link-at-point)))
+       :test #'string-equal))))
+
 ;; ideas from Grant Rosson's zk package
 
 (defun phi--grep-tag-list ()
@@ -690,7 +706,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 Select TAG, with completion, from list of all tags in phi notes."
   (interactive)
   (insert (completing-read "Tag: " (phi--grep-tag-list))))
-  
+
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup phi-sidebar ()
