@@ -176,6 +176,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-persistent-cache t
+  "True if cache should be persistent (written on disk)"
+  :type 'boolean
+  :group 'phi)
+
 (defcustom phi-project-tag "proj"
   "Tag identification for projects"
   :type 'string
@@ -856,10 +861,52 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;i;;;;;;;;;;
 
-(defun phi-cache-initialize ()
-  "Initialize hash tables for caching files."
+(defun phi-cache--write-hash-to-file (h outfile)
+  "Asynchronously write a hashtable to a file."
+  ;; (require 'async)
+  (async-start `(lambda ()
+                  (with-temp-file ,outfile
+                    (prin1 ,h (current-buffer)))
+                  nil)
+               ;; `(lambda (result)
+               ;;    (message (format "PHI cache saved to %s" ,outfile)))
+               'ignore))
+
+(defun phi-cache--persistent-filename (data)
+  (let ((homedir (getenv "HOME")))
+    (concat homedir "/.phi-cache-" data)))
+
+(defun phi-persist-cache ()
+    (phi-cache--write-hash-to-file phi-hash-contents (phi-cache--persistent-filename "contents"))
+    (phi-cache--write-hash-to-file phi-hash-mtimes (phi-cache--persistent-filename "mtimes")))
+
+(defun phi-cache-cleanup ()
+  "Asynchronously check for orphaned entries and reset the cache if any is found."
+  ;; TODO: implement cache cleanup
+  )
+
+(defun phi-cache--slurp (file)
+  (with-temp-buffer
+    (insert-file file)
+    (read (current-buffer))))
+
+(defun phi-load-persistent-cache ()
+    (setq phi-hash-mtimes (phi-cache--slurp (phi-cache--persistent-filename "mtimes")))
+    (setq phi-hash-contents (phi-cache--slurp (phi-cache--persistent-filename "contents"))))
+
+(defun phi-cache-reset ()
+  "Reset the notes cache."
+  (interactive)
   (setq phi-hash-contents (make-hash-table :test 'equal))
   (setq phi-hash-mtimes (make-hash-table :test 'equal)))
+
+(defun phi-cache-initialize ()
+  "Initialize hash tables for caching files. Read from persistent layer if enabled."
+  (if (and phi-persistent-cache
+           (file-exists-p (phi-cache--persistent-filename "mtimes"))
+           (file-exists-p (phi-cache--persistent-filename "contents")))
+      (phi-load-persistent-cache)
+    (phi-cache-reset)))
 
 (defun phi-cache-newer-file (file mtime)
   "Update cached information for FILE with given MTIME."
@@ -1075,7 +1122,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm :sources
          (helm-phi--build-sources)
         :buffer "*helm phi notes*"
-        :input input))
+        :input input)
+  (phi-persist-cache))
 
 ;;;###autoload
 (defun helm-phi-find-like-tags ()
