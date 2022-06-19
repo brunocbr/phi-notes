@@ -960,14 +960,44 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
        (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
                                        t
                                        (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)))
+(defun helm-phi-source-data-item (file)
+  (cons
+   (format "%s::%s" file (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
+                          (phi-cache-get-contents file) ""))
+   (expand-file-name file)))
 
 (defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
 ;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
-  (mapcar #'(lambda (x) (cons (format "%s::%s" x (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
-                                                  (phi-cache-get-contents x)
-                                                  "")) (expand-file-name x)))
-          (helm-phi-source-data-sorted path)))
+  (mapcar #'helm-phi-source-data-item (helm-phi-source-data-sorted path)))
+
+(defun helm-phi-wiki-linked-action (file)
+  (require 'helm-source)
+  (interactive)
+  (helm :sources (append
+                  (list
+                   (helm-build-sync-source (format "Wiki links into %s" (file-name-base file))
+                     :candidates (mapcar #'helm-phi-source-data-item
+                                         (append
+                                          (list file) ;; include the note itself
+                                          (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
+                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                     :candidate-transformer 'helm-phi-candidates-transformer
+                     :action (helm-phi--build-actions)))
+                  (helm-phi--build-sources))
+        :buffer (format "*helm phi wiki links in %s*" (file-name-base file))))
+
+(defun helm-phi--build-actions ()
+  (helm-make-actions "Open note"
+                     'helm-phi-find-note-action
+                     "Insert link to note"
+                     'helm-ag-phi-insert-link-action
+                     "Insert title(s) & link(s)"
+                     'helm-phi-insert-titles-and-links-action
+                     "Insert & assign to this project"
+                     'helm-phi-insert-and-assign-action
+                     "Navigate wiki linked notes"
+                     'helm-phi-wiki-linked-action))
 
 (defun helm-phi--build-sources ()
   (append
@@ -977,15 +1007,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
               :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
 ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
-              :action (helm-make-actions "Open note"
-                                         'helm-phi-find-note-action
-                                         "Insert link to note"
-                                         'helm-ag-phi-insert-link-action
-                                         "Insert title(s) & link(s)"
-                                         'helm-phi-insert-titles-and-links-action
-                                         "Insert & assign to this project"
-                                         'helm-phi-insert-and-assign-action)))
-   (list 
+              :action (helm-phi--build-actions)))
+   (list
     (helm-build-dummy-source "Create a new note"
       :action (helm-make-actions "Create a new note"
                                  'phi-new-originating-note)))))
