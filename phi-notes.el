@@ -877,8 +877,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (concat homedir "/.phi-cache-" data)))
 
 (defun phi-persist-cache ()
+  (when phi-persistent-cache
     (phi-cache--write-hash-to-file phi-hash-contents (phi-cache--persistent-filename "contents"))
-    (phi-cache--write-hash-to-file phi-hash-mtimes (phi-cache--persistent-filename "mtimes")))
+    (phi-cache--write-hash-to-file phi-hash-mtimes (phi-cache--persistent-filename "mtimes"))))
 
 (defun phi-cache-cleanup ()
   "Asynchronously check for orphaned entries and reset the cache if any is found."
@@ -940,7 +941,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
           (mapcar #'phi-cache-file
                 (directory-files (expand-file-name dir) t
                                  (helm-phi--extract-id-from-cadidate-re)))
-          (puthash (expand-file-name dir) mtime-file phi-hash-mtimes)))))
+          (puthash (expand-file-name dir) mtime-file phi-hash-mtimes)
+          (phi-persist-cache)))))
 
 ;; helm-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1122,8 +1124,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm :sources
          (helm-phi--build-sources)
         :buffer "*helm phi notes*"
-        :input input)
-  (phi-persist-cache))
+        :input input))
 
 ;;;###autoload
 (defun helm-phi-find-like-tags ()
