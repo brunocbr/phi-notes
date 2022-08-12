@@ -842,27 +842,30 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 ;; bibtex-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun bibtex-completion-create-phi-note (keys)
-  "Create a PHI bibliographical annotation note with the first entry in KEYS."
+  "Create a PHI bibliographical annotation note(s) for each entry in KEYS."
   (phi--enforce-directory)
-  (let* ((key (nth 0 keys))
-         (entry (bibtex-completion-get-entry key))
-         (year (or (bibtex-completion-get-value "year" entry)
-                   (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
-         (author (bibtex-completion-get-value "author" entry))
-         (title (bibtex-completion-get-value "title" entry))
-         (note-title (read-string "title: " (format "%s (%s) %s" author year title)))
-         (tags (read-string "tags: " (concat phi-tag-symbol phi-annotation-tag)))
-         (loc (read-string "loc: " "0"))
-         (id (phi-get-counter))
-         (current-id (phi-get-current-note-id))
-         (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
-                                         :parent current-id)))
-    (when current-id
-      (helm-phi-insert-title-and-link-action (buffer-file-name buffer)))
+  (cl-loop for key in keys
+           do
+           (let* ((entry (bibtex-completion-get-entry key))
+                  (year (or (bibtex-completion-get-value "year" entry)
+                            (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
+                  (author (bibtex-completion-get-value "author" entry))
+                  (title (bibtex-completion-get-value "title" entry))
+                  (note-title (read-string "title: " (format "%s (%s) %s" author year title)))
+                  (current-id (phi-get-current-note-id))
+                  (tags (read-string "tags: " (concat (when current-id
+                                                        (concat (phi--get-tags-from-note-as-str current-id) " "))
+                                                      phi-tag-symbol phi-annotation-tag)))
+                  (loc (read-string "loc: " "0"))
+                  (id (phi-get-counter))
+                  (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
+                                                  :parent current-id)))
+             (when current-id
+               (helm-phi-insert-title-and-link-action (buffer-file-name buffer)))
 
-    (if (equal current-prefix-arg nil) ; no C-u
-        (switch-to-buffer buffer)
-      (pop-to-buffer buffer))))
+             (if (equal current-prefix-arg nil) ; no C-u
+                 (switch-to-buffer buffer)
+               (pop-to-buffer buffer)))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
