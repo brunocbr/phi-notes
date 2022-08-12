@@ -842,7 +842,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 ;; bibtex-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun bibtex-completion-create-phi-note (keys)
-  "Create a PHI bibliographical annotation note(s) for each entry in KEYS."
+  "Create PHI bibliographical annotation note(s) for each entry in KEYS."
   (phi--enforce-directory)
   (cl-loop for key in keys
            do
