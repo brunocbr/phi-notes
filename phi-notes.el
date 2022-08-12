@@ -325,8 +325,8 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
 
 (defun phi--get-note-id-from-file-name (filename)
-  (string-match (concat "^" phi-id-regex) filename)
-  (match-string 0 filename))
+  (when (string-match (concat "^" phi-id-regex) filename)
+    (match-string 0 filename)))
 
 (defun phi-get-current-note-id ()
   "Get the current note id"
@@ -854,12 +854,17 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          (tags (read-string "tags: " (concat phi-tag-symbol phi-annotation-tag)))
          (loc (read-string "loc: " "0"))
          (id (phi-get-counter))
-         (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc)))
+         (current-id (phi-get-current-note-id))
+         (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
+                                         :parent current-id)))
+    (when current-id
+      (helm-phi-insert-title-and-link-action (buffer-file-name buffer)))
+
     (if (equal current-prefix-arg nil) ; no C-u
         (switch-to-buffer buffer)
       (pop-to-buffer buffer))))
 
-;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;i;;;;;;;;;;
+;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun phi-cache--write-hash-to-file (h outfile)
   "Asynchronously write a hashtable to a file."
