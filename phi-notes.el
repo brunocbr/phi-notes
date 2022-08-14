@@ -860,12 +860,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (id (phi-get-counter))
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
                                                   :parent current-id)))
-             (when current-id
-               (helm-phi-insert-title-and-link-action (buffer-file-name buffer)))
-
-             (if (equal current-prefix-arg nil) ; no C-u
-                 (switch-to-buffer buffer)
-               (pop-to-buffer buffer)))))
+             (if current-id
+                 (progn
+                   (insert "- ")
+                   (helm-phi-insert-title-and-link-action (buffer-file-name buffer))
+                   (newline))
+               (if (equal current-prefix-arg nil) ; no C-u
+                   (switch-to-buffer buffer)
+                 (pop-to-buffer buffer))))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
