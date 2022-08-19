@@ -1124,20 +1124,20 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (split-string files "\n" t)))
 
 (defun phi--backlinks-list (id)
+  "Return a list of files with wiki links to note ID"
   (phi--grep-file-list (regexp-quote (format phi-link-format id))))
 
 ;;;###autoload
 (defun phi-backlinks ()
-  ""
+  "Display a list of notes with links pointing to the current one."
   (interactive)
   (let* ((id (phi-get-current-note-id))
          (source-name (format "Backlinks to %s" (file-name-base buffer-file-name)))
          (candidates (phi--backlinks-list id))
          (backlink-source (helm-build-sync-source source-name
                             :candidates (helm-phi--source-data-items candidates)
-                           :candidate-transformer 'helm-phi-candidates-transformer
-                           :action (helm-phi--build-actions))))
-    (message (format "grabbing %s's backlinks" candidates))
+                            :candidate-transformer 'helm-phi-candidates-transformer
+                            :action (helm-phi--build-actions))))
     (helm :sources backlink-source
           :buffer "*helm phi backlinks*")))
 
