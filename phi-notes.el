@@ -141,6 +141,11 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-link-format "[[%s]]"
+  "Format for wiki link"
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-link-left-bracket-symbol-re "\\[\\["
   "RegEx for left bracket"
   :type 'string
@@ -1025,6 +1030,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                           (phi-cache-get-contents file) ""))
    (expand-file-name file)))
 
+(defun helm-phi--source-data-items (item-list)
+  (mapcar #'helm-phi-source-data-item
+          item-list))
+
 (defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
 ;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
@@ -1101,6 +1110,37 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (sort (copy-seq candidates) (lambda (x y)
                      (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
 
+(defun phi--grep-file-list (str)
+  "Return a list of files containing regexp STR."
+  (let* ((files (shell-command-to-string (concat
+                                          "grep -lir --include \\*."
+                                          "{markdown,txt,org,taskpaper,md}" ;; should be a symbol
+                                          " -e "
+                                          (shell-quote-argument
+                                           str)
+                                          " "
+                                          (phi-notes-path t)
+                                          " 2>/dev/null"))))
+    (split-string files "\n" t)))
+
+(defun phi--backlinks-list (id)
+  (phi--grep-file-list (regexp-quote (format phi-link-format id))))
+
+;;;###autoload
+(defun phi-backlinks ()
+  ""
+  (interactive)
+  (let* ((id (phi-get-current-note-id))
+         (source-name (format "Backlinks to %s" id))
+         (candidates (phi--backlinks-list id))
+         (backlink-source (helm-build-sync-source source-name
+                            :candidates (helm-phi--source-data-items candidates)
+                           :candidate-transformer 'helm-phi-candidates-transformer
+                           :action (helm-phi--build-actions))))
+    (message (format "grabbing %s's backlinks" candidates))
+    (helm :sources backlink-source
+          :buffer "*helm phi backlinks*")))
+
 (defun helm-do-phi-ag (input)
   (require 'helm-ag)
   (helm-ag--do-ag-set-source (phi-notes-path t))
@@ -1110,12 +1150,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (helm :sources 'helm-source-do-ag :buffer "*helm-ag-phi*" :keymap helm-do-ag-map
         :input input
         :history 'helm-ag--helm-history))
-
-;;;###autoload
-(defun helm-ag-phi-find-backlinks ()
-  (interactive)
-  (helm-do-phi-ag (concat
-                   phi-link-left-bracket-symbol-re (phi-get-current-note-id) phi-link-right-bracket-symbol-re)))
 
 ;;;###autoload
 (defun helm-ag-phi-find-like-tags ()
@@ -1179,7 +1213,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
-    (define-key map (kbd "C-c f b") #'helm-ag-phi-find-backlinks)
+    (define-key map (kbd "C-c f b") #'phi-backlinks)
     (define-key map (kbd "C-c f t") #'helm-phi-find-like-tags)
     (define-key map (kbd "C-c f f") #'helm-ag-phi-find)
     (define-key map (kbd "C-c R") #'phi-rename-current-note)
