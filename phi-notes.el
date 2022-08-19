@@ -1131,7 +1131,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   ""
   (interactive)
   (let* ((id (phi-get-current-note-id))
-         (source-name (format "Backlinks to %s" id))
+         (source-name (format "Backlinks to %s" (file-name-base buffer-file-name)))
          (candidates (phi--backlinks-list id))
          (backlink-source (helm-build-sync-source source-name
                             :candidates (helm-phi--source-data-items candidates)
