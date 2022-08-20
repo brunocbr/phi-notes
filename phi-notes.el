@@ -1101,7 +1101,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
     (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
-           (width-title (round (/ (1- width-left) 1.16)))
+           (width-title (round (/ (1- width-left) 1.24)))
            (width-citekey (- width-left width-title 2))
           (display (car candidate)))
       (cons
@@ -1113,7 +1113,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          width-title nil ?\s t #'helm-moccur-buffer) ;; id and title
         " "
         (truncate-string-to-width
-         (propertize (match-string 5 display) 'face 'font-lock-function-name-face)
+         (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
          width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
         " "
         (truncate-string-to-width
