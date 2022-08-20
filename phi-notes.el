@@ -467,6 +467,13 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
     (kill-buffer "*PHI temp*")
     contents))
 
+(defun phi--get-metadata-from-file (file)
+  (with-current-buffer (get-buffer-create "*PHI temp*")
+    (insert-file-contents file nil nil nil t)
+    (let ((contents (list :tags (phi-get-note-field-contents phi-tags-field)
+                          :citekey (phi-get-note-field-contents phi-citekey-field))))
+      contents)))
+
 (defun phi-has-tag (tag)
   (let ((tags (phi-get-note-field-contents phi-tags-field)))
     (not (null (string-match-p (concat phi-tag-symbol tag "\\b") tags)))))
@@ -927,7 +934,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-cache-newer-file (file mtime)
   "Update cached information for FILE with given MTIME."
   ;; Modification time
-  (let ((contents (phi--get-tags-from-file-as-str file)))
+  (let ((contents (phi--get-metadata-from-file file)))
     (puthash file mtime phi-hash-mtimes)
     (puthash file contents phi-hash-contents)))
 
@@ -942,10 +949,15 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
             (time-less-p mtime-cache mtime-file))
         (phi-cache-newer-file (expand-file-name file) mtime-file))))
 
-(defun phi-cache-get-contents (file)
+(defun phi-cache--get-contents (file)
   "Get cached contents for corresponding `FILE'"
   (or (gethash (expand-file-name file) phi-hash-contents)
       (phi-cache-file file)))
+
+(defun phi-cache--get-tags (file)
+  "Get cached contents for tags of corresponding `FILE'"
+  (let ((contents (phi-cache--get-contents file)))
+    (plist-get contents :tags)))
 
 (defun phi-cache-refresh-dir-maybe (dir)
   (let ((mtime-cache (gethash (expand-file-name dir) phi-hash-mtimes))
@@ -1025,10 +1037,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                        t
                                        (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)))
 (defun helm-phi-source-data-item (file)
-  (cons
-   (format "%s::%s" file (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
-                          (phi-cache-get-contents file) ""))
-   (expand-file-name file)))
+  (let* ((contents (phi-cache--get-contents file))
+         (tags (plist-get contents :tags))
+         (citekey (plist-get contents :citekey)))
+    (cons
+     (format "%s::%s::%s" file (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
+                            tags "")
+             (or (when citekey (concat "@" citekey)) ""))
+     (expand-file-name file))))
 
 (defun helm-phi--source-data-items (item-list)
   (mapcar #'helm-phi-source-data-item
@@ -1082,21 +1098,27 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                  'phi-new-originating-note)))))
 
 (defun helm-phi-formatter (candidate)
-  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)$")
+  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
-    (let ((width (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
+    (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
+           (width-title (round (/ (1- width-left) 1.16)))
+           (width-citekey (- width-left width-title 2))
           (display (car candidate)))
       (cons
        (concat
-        (truncate-string-to-width 
+        (truncate-string-to-width
          (format "%s %s"
                  (propertize (match-string 1 display) 'face 'font-lock-function-name-face)
-                 (propertize (match-string 2 display) 'face 'font-lock-builtin-face)) width nil ?\s t
-                 #'helm-moccur-buffer)
+                 (propertize (match-string 2 display) 'face 'font-lock-builtin-face))
+         width-title nil ?\s t #'helm-moccur-buffer) ;; id and title
         " "
         (truncate-string-to-width
-         (propertize (match-string 4 display) 'face 'font-lock-keyword-face) (- (window-body-width) 3 width) nil ?\s t
-         #'font-lock-keyword-face))
+         (propertize (match-string 5 display) 'face 'font-lock-function-name-face)
+         width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
+        " "
+        (truncate-string-to-width
+         (propertize (match-string 4 display) 'face 'font-lock-keyword-face)
+         (- (window-body-width) 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
        (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
