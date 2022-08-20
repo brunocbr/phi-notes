@@ -458,15 +458,6 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
       (insert-file-contents file nil nil nil t)
       (setq contents (phi-get-note-field-contents phi-tags-field)))))
 
-(defun phi--get-tags-from-file-as-str (file)
-  "Get a string of the tags from `FILE'"
-  (let (contents)
-    (with-current-buffer (get-buffer-create "*PHI temp*")
-      (insert-file-contents file nil nil nil t)
-      (setq contents (phi-get-note-field-contents phi-tags-field)))
-    (kill-buffer "*PHI temp*")
-    contents))
-
 (defun phi--get-metadata-from-file (file)
   (with-current-buffer (get-buffer-create "*PHI temp*")
     (insert-file-contents file nil nil nil t)
@@ -1041,8 +1032,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          (tags (plist-get contents :tags))
          (citekey (plist-get contents :citekey)))
     (cons
-     (format "%s::%s::%s" file (or ;; (phi--get-tags-from-note-as-str (phi--get-note-id-from-file-name x))
-                            tags "")
+     (format "%s::%s::%s" file (or tags "")
              (or (when citekey (concat "@" citekey)) ""))
      (expand-file-name file))))
 
