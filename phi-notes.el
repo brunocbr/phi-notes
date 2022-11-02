@@ -414,7 +414,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   (let ((id (phi-get-parent-note-id)))
     (if id
         (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id) t)))
-      (error "The current note has no parent"))))
+      (message "The current note has no parent!"))))
 
 (defun phi-get-next-link-at-point ()
   "Search forward for wikilink and return id"
