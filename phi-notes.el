@@ -286,6 +286,7 @@ tags:	 	%s
     (cadr (assoc (completing-read "Select a note repository: "
                                   phi-repository-alist) phi-repository-alist))))
 
+;; TODO: should refactor all of this
 (defun phi--enforce-directory ()
   "Try to make sure we are at the right directory"
   (setq default-directory
@@ -305,7 +306,7 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Get the full path for the counter file"
   (concat (phi-notes-path) "/" phi-counter-file))
 
-(defun phi-get-counter ()
+(defun phi-inc-counter ()
   "Increment and return current counter"
   (let* ((phi-counter-path (phi--get-counter-path))
          (current-counter (phi--get-current-counter-from-file phi-counter-path)))
@@ -561,7 +562,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
         (tlg-fields (phi-get-current-note-tlg-fields))
-        (id (phi-get-counter))
+        (id (phi-inc-counter))
         (buffer nil)
         (w nil))
     (unless parent (setq parent (phi-get-current-note-id)))
@@ -860,7 +861,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                                         (concat (phi--get-tags-from-note-as-str current-id) " "))
                                                       phi-tag-symbol phi-annotation-tag)))
                   (loc (read-string "loc: " "0"))
-                  (id (phi-get-counter))
+                  (id (phi-inc-counter))
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
                                                   :parent current-id)))
              (if current-id
