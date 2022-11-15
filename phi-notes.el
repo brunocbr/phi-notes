@@ -362,11 +362,11 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
                     (mapcar (lambda (x) (cons
                                          (directory-file-name (expand-file-name (cadr x))) (first x))) phi-repository-alist))))))
 
-(defun phi-matching-file-name (id &optional usecontext)
+(defun phi-matching-file-name (id &optional usecontext path)
   "Return the first match of a file name starting with ID.
 
 If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
-  (nth 0 (file-name-all-completions id (phi-notes-path usecontext)))) ;; blank for current dir instead of phi-notes-path
+  (nth 0 (file-name-all-completions id (or path (phi-notes-path usecontext))))) ;; blank for current dir instead of phi-notes-path
 
 (defun phi-wiki-link-re ()
   (concat phi-link-left-bracket-symbol-re
@@ -398,11 +398,21 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (match-string-no-properties 1 project)
       (or project nil))))
 
+(defun phi--get-repository-path (repository)
+  (cadr (assoc repository phi-repository-alist)))
+
+(defun phi-in-repository-p (path repository)
+  "Returns t if PATH is in the corresponding directory for
+REPOSITORY"
+  (let ((target-dir (file-name-directory (expand-file-name path)))
+        (repo-dir (file-name-directory (expand-file-name (phi--get-repository-path repository)))))
+    (string= target-dir repo-dir)))
+
 ;;;###autoload
 (defun phi-find-note (id repo)
   "Visit note `ID' in repository `REPO'"
-  (setq default-directory (cadr (assoc repo phi-repository-alist)))
-  (let ((filename (phi-matching-file-name id)))
+  (let* ((path (phi--get-repository-path repo))
+         (filename (phi-matching-file-name id nil path)))
     (if filename
         (switch-to-buffer (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
@@ -716,6 +726,8 @@ Select TAG, with completion, from list of all tags in phi notes."
   (interactive)
   (insert (completing-read "Tag: " (phi--grep-tag-list))))
 
+
+
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup phi-sidebar ()
@@ -825,6 +837,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (define-button-type 'phi-linked-note
   'follow-link t
   'action #'phi-find-file-button)
+
 
 (defun phi-find-file-button (button)
   (let ((buffer (find-file-noselect (phi-matching-file-name
