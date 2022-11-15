@@ -862,6 +862,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                     "\\(" phi-id-regex "\\)" phi-link-right-bracket-symbol-re) nil t)
       (make-button (match-beginning 1) (match-end 1) :type 'phi-linked-note))))
 
+
 ;; bibtex-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun bibtex-completion-create-phi-note (keys)
@@ -891,9 +892,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                      (insert "- ")
                      (helm-phi-insert-title-and-link-action new-file)
                      (newline))))
-             (if (equal current-prefix-arg nil) ; no C-u
-                 (switch-to-buffer buffer)
-               (pop-to-buffer buffer)))))
+             (phi--pop-to-buffer-maybe buffer))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1036,24 +1035,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                                           " " (phi-get-note-field-contents phi-tags-field))))
   (helm-phi-insert-title-and-link-action candidate))
 
+(defun phi--pop-to-buffer-maybe (buffer)
+  "Pop to buffer if interaction is modified with C-u"
+  (if (equal current-prefix-arg nil) ; no C-u
+      (switch-to-buffer buffer)
+    (pop-to-buffer buffer)))
+
 (defun helm-phi-find-note-action (candidate)
   (find-file candidate))
-
-(defun phi-org-set-link (filename)
-  "Insert Org link to FILENAME as `ANNOTATION' property"
-  (when (eql 'org-mode major-mode)
-    (require 'org)
-    (let* ((id (phi--get-note-id-from-file-name (file-name-nondirectory
-                                                 filename)))
-           (repo (phi-repository-for-path filename))
-           (org-special-properties nil))
-      (org-set-property "ANNOTATION" (format "%s:%s" repo id)))))
-
-(defun helm-phi-org-insert-link (candidate)
-  "Action to insert Org link to target candidate"
-  (let* ((filename (helm-phi--get-file-name candidate)))
-    (phi-org-set-link filename)))
-
 
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
@@ -1108,14 +1097,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                      'helm-ag-phi-insert-link-action
                      "Insert title(s) & link(s)"
                      'helm-phi-insert-titles-and-links-action
-                     "Insert link in Org entry"
-                     'helm-phi-org-insert-link
                      "Insert & assign to this project"
                      'helm-phi-insert-and-assign-action
                      "Navigate wiki linked notes"
                      'helm-phi-wiki-linked-action))
 
 (defun helm-phi--build-sources ()
+  (require 'helm-find)
   (append
    (cl-loop
     for repo in phi-repository-alist
@@ -1123,6 +1111,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
               :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
 ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
+;;              :keymap helm-find-files-map ;; FIXME
               :action (helm-phi--build-actions)))
    (list
     (helm-build-dummy-source "Create a new note"
