@@ -405,8 +405,14 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
   "Returns t if PATH is in the corresponding directory for
 REPOSITORY"
   (let ((target-dir (file-name-directory (expand-file-name path)))
-        (repo-dir (file-name-directory (expand-file-name (phi--get-repository-path repository)))))
+        (repo-dir (file-name-as-directory (expand-file-name (phi--get-repository-path repository)))))
     (string= target-dir repo-dir)))
+
+(defun phi-repository-for-path (path)
+  "Return the repository name corresponding to PATH, or `nil' if
+there's no match"
+  (some #'(lambda (r) (when (phi-in-repository-p path r) r))
+        (mapcar 'car phi-repository-alist)))
 
 ;;;###autoload
 (defun phi-find-note (id repo)
@@ -876,15 +882,18 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (loc (read-string "loc: " "0"))
                   (id (phi-inc-counter))
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
-                                                  :parent current-id)))
-             (if current-id
-                 (progn
-                   (insert "- ")
-                   (helm-phi-insert-title-and-link-action (buffer-file-name buffer))
-                   (newline))
-               (if (equal current-prefix-arg nil) ; no C-u
-                   (switch-to-buffer buffer)
-                 (pop-to-buffer buffer))))))
+                                                  :parent current-id))
+                  (new-file (buffer-file-name buffer)))
+             (if (eql 'org-mode major-mode)
+                 (phi-org-set-link new-file)
+               (if current-id
+                   (progn
+                     (insert "- ")
+                     (helm-phi-insert-title-and-link-action new-file)
+                     (newline))))
+             (if (equal current-prefix-arg nil) ; no C-u
+                 (switch-to-buffer buffer)
+               (pop-to-buffer buffer)))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1030,6 +1039,22 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-find-note-action (candidate)
   (find-file candidate))
 
+(defun phi-org-set-link (filename)
+  "Insert Org link to FILENAME as `ANNOTATION' property"
+  (when (eql 'org-mode major-mode)
+    (require 'org)
+    (let* ((id (phi--get-note-id-from-file-name (file-name-nondirectory
+                                                 filename)))
+           (repo (phi-repository-for-path filename))
+           (org-special-properties nil))
+      (org-set-property "ANNOTATION" (format "%s:%s" repo id)))))
+
+(defun helm-phi-org-insert-link (candidate)
+  "Action to insert Org link to target candidate"
+  (let* ((filename (helm-phi--get-file-name candidate)))
+    (phi-org-set-link filename)))
+
+
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
           (sort (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
@@ -1075,6 +1100,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (helm-phi--build-sources))
         :buffer (format "*helm phi wiki links in %s*" (file-name-base file))))
 
+
 (defun helm-phi--build-actions ()
   (helm-make-actions "Open note"
                      'helm-phi-find-note-action
@@ -1082,6 +1108,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                      'helm-ag-phi-insert-link-action
                      "Insert title(s) & link(s)"
                      'helm-phi-insert-titles-and-links-action
+                     "Insert link in Org entry"
+                     'helm-phi-org-insert-link
                      "Insert & assign to this project"
                      'helm-phi-insert-and-assign-action
                      "Navigate wiki linked notes"
