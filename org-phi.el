@@ -40,5 +40,4 @@
 	               (_ (org-bibtex-put (car pair) (cdr pair)))))
              (mapc togtag org-bibtex-tags))))
 
-
 (provide 'org-phi)
