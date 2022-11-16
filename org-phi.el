@@ -6,9 +6,7 @@
 (require 's)
 
 (defvar org-phi-bib-entry-template
-  "${author}. (${year}) ${title}.
-:PROPERTIES:
-:END:")
+  "${author} (${year}) ${title}")
 
 (defun phi-bibtex-org-insert-bib-action (keys)
   (cl-loop for key in keys
