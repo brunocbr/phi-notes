@@ -871,6 +871,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for key in keys
            do
            (let* ((entry (bibtex-completion-get-entry key))
+                  (is-org? (eql 'org-mode major-mode))
                   (year (or (bibtex-completion-get-value "year" entry)
                             (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
                   (author (bibtex-completion-get-value "author" entry))
@@ -885,8 +886,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
                                                   :parent current-id))
                   (new-file (buffer-file-name buffer)))
-             (if (eql 'org-mode major-mode)
-                 (phi-org-set-link new-file)
+             (if is-org?
+                 (phi-bibtex-org-insert-bib-action (list key))
                (if current-id
                    (progn
                      (insert "- ")
