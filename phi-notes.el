@@ -420,7 +420,7 @@ there's no match"
   (let* ((path (phi--get-repository-path repo))
          (filename (phi-matching-file-name id nil path)))
     (if filename
-        (switch-to-buffer (find-file-noselect filename))
+        (phi--pop-to-buffer-maybe (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
 
 ;;;###autoload
@@ -429,7 +429,8 @@ there's no match"
   (interactive)
   (let ((id (phi-get-parent-note-id)))
     (if id
-        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id) t)))
+        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)
+        t)))
       (message "The current note has no parent!"))))
 
 (defun phi-get-next-link-at-point ()
