@@ -420,7 +420,7 @@ there's no match"
   (let* ((path (phi--get-repository-path repo))
          (filename (phi-matching-file-name id nil path)))
     (if filename
-        (switch-to-buffer (find-file-noselect filename))
+        (phi--pop-to-buffer-maybe (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
 
 ;;;###autoload
@@ -429,7 +429,8 @@ there's no match"
   (interactive)
   (let ((id (phi-get-parent-note-id)))
     (if id
-        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id) t)))
+        (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)
+        t)))
       (message "The current note has no parent!"))))
 
 (defun phi-get-next-link-at-point ()
@@ -871,6 +872,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for key in keys
            do
            (let* ((entry (bibtex-completion-get-entry key))
+                  (is-org? (eql 'org-mode major-mode))
                   (year (or (bibtex-completion-get-value "year" entry)
                             (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
                   (author (bibtex-completion-get-value "author" entry))
@@ -885,8 +887,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
                                                   :parent current-id))
                   (new-file (buffer-file-name buffer)))
-             (if (eql 'org-mode major-mode)
-                 (phi-org-set-link new-file)
+             (if is-org?
+                 (phi-bibtex-org-insert-bib-action (list key))
                (if current-id
                    (progn
                      (insert "- ")

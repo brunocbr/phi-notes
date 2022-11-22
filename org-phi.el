@@ -3,10 +3,14 @@
 (require 'org)
 (require 'bibtex-completion)
 (require 'ol-bibtex)
-(require 's)
 
 (defvar org-phi-bib-entry-template
   "${author} (${year}) ${title}")
+
+;; TODO: esta função poderia ser substituída por uma chamada `org-bibtex-write',
+;; ajustando o custom field `'org-bibtex-headline-format-function' no formato
+;; acima
+(require 's)
 
 (defun phi-bibtex-org-insert-bib-action (keys)
   (cl-loop for key in keys
@@ -26,7 +30,7 @@
 	               ("=key=" 		(org-bibtex-put
 	                             org-bibtex-key-property (cdr pair)))
 	               ("=type=" 		nil)
-                 ("title" 		nil)
+                       ("title" 		nil)
 	               ("keywords" 	(if org-bibtex-tags-are-keywords
 		                              (dolist (kw (split-string (cdr pair) ", *"))
 			                              (funcall
