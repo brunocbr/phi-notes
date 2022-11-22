@@ -238,6 +238,65 @@ tags:	 	%s
   :safe 'stringp
   :group 'binder)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defun phi-journal-header (id title tags)
+    (format "\
+  Date: %s
+  Tags: %s
+
+%s
+
+"
+            (format-time-string "%e %B %Y %H:%M")
+            (or tags "") (or title (format-time-string "%A"))))
+
+(defun phi--yaml-section-wrap (s)
+  "Wrap S as a YAML section. All but the last fields will have a
+double space appended to the end of the line. This is in order
+for text editors that don't identify YALM sections (e. g.
+1Writer) to display the lines correctly."
+  (let* ((lines (split-string s "\n" t " +$"))
+         (breaklines (mapconcat #'(lambda (x) (format "%s  " x)) (butlast lines) "\n"))
+         (section (concat "---\n" breaklines "\n" (car (last lines)) "\n...")))
+    section))
+
+(defun phi--md-common-header (id title tags &optional parent-props)
+  "Return the common header for a Markdown note."
+  (format "\
+title: %S
+id:	Φ%s
+tags:	%s" title id (or tags "")))
+
+(defun phi-construct-breadcrumb (&optional parent)
+  "Construct the breadcrumb for a new note"
+  (if (and parent (not (equal parent "")))
+      (concat phi-parent-symbol phi-link-left-bracket-symbol
+              parent phi-link-right-bracket-symbol)
+    (concat phi-originating-symbol)))
+
+(defun phi--yaml-fields (props)
+  "Return YAML fields for a alist PROPS."
+  (cl-loop for (k . v) in props collect (format "%s: %s\n" k v)))
+
+(defun phi-md-header (id title &optional tags parent-props extra-fields)
+  "Return the header for a Markdown note.
+PARENT-PROPS is a plist with parent note properties as keywords.
+EXTRA-FIELDS is an alist of fields to include in the header after
+the common fields."
+  (let* ((basic-header (phi--md-common-header id title tags))
+         (extra (phi--yaml-fields extra-fields))
+         (frontmatter (phi--yaml-section-wrap
+                       (concat basic-header extra)))
+         (parent-id (plist-get parent-props :id))
+         (breadcrumb (phi-construct-breadcrumb parent-id)))
+    (concat frontmatter "\n\n" breadcrumb "\n")))
+
+(cl-defun phi-basic-header (&rest args)
+  "Return the header for a basic Markdown note."
+  (phi-md-header args))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,13 +377,6 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
         (with-temp-file phi-counter-path
           (insert counter))
         counter))))
-
-(defun phi-construct-breadcrumb (&optional parent)
-  "Construct the breadcrumb for a new note"
-  (if (and parent (not (equal parent "")))
-      (concat phi-parent-symbol phi-link-left-bracket-symbol
-              parent phi-link-right-bracket-symbol)
-    (concat phi-originating-symbol)))
 
 (defun phi-id-to-wikilink (id)
   "Return a wikilink for the given `id'"
