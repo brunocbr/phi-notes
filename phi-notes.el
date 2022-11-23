@@ -253,7 +253,7 @@ tags:	 	%s
             (or tags "") (or title (format-time-string "%A"))))
 
 (defun phi--yaml-section-wrap (s)
-  "Wrap S as a YAML section. All but the last fields will have a
+  "Wrap S as a YAML section. All but the last fields will have
 double space appended to the end of the line. This is in order
 for text editors that don't identify YALM sections (e. g.
 1Writer) to display the lines correctly."
@@ -262,12 +262,13 @@ for text editors that don't identify YALM sections (e. g.
          (section (concat "---\n" breaklines "\n" (car (last lines)) "\n...")))
     section))
 
-(defun phi--md-common-header (id title tags &optional parent-props)
+(defun phi--md-common-header (id title tags)
   "Return the common header for a Markdown note."
   (format "\
 title: %S
 id:	Φ%s
-tags:	%s" title id (or tags "")))
+tags:	%s
+" title id (or tags "")))
 
 (defun phi-construct-breadcrumb (&optional parent)
   "Construct the breadcrumb for a new note"
@@ -278,7 +279,7 @@ tags:	%s" title id (or tags "")))
 
 (defun phi--yaml-fields (props)
   "Return YAML fields for a alist PROPS."
-  (cl-loop for (k . v) in props collect (format "%s: %s\n" k v)))
+  (cl-loop for (k . v) in props concat (format "%s: %s\n" k v)))
 
 (defun phi-md-header (id title &optional tags parent-props extra-fields)
   "Return the header for a Markdown note.
@@ -290,12 +291,66 @@ the common fields."
          (frontmatter (phi--yaml-section-wrap
                        (concat basic-header extra)))
          (parent-id (plist-get parent-props :id))
-         (breadcrumb (phi-construct-breadcrumb parent-id)))
-    (concat frontmatter "\n\n" breadcrumb "\n")))
+         (breadcrumb (when phi-breadcrumb
+                       (concat "\n" (phi-construct-breadcrumb
+                                     parent-id)))))
+    (concat frontmatter "\n" breadcrumb "\n")))
 
-(cl-defun phi-basic-header (&rest args)
-  "Return the header for a basic Markdown note."
-  (phi-md-header args))
+(defun phi-md-hashtags-str (tags)
+  "Generate a string of hashtags out of the TAGS list."
+  (mapconcat #'(lambda (t) (format "#%s" t)) tags " "))
+
+(defun phi-bib-annotation-header (id title))
+
+(defvar phi-note-types
+  '((default . ((file-extension . "markdown")
+                (extra-fields . nil)
+                (required-tags . nil)
+                (header-function . #'phi-md-header)
+                (tag-reader-function . nil)
+                (tag-writer-function . nil)
+                (verify-function . nil)))
+    (bib-annotation . ((file-extension "markdown")
+                       (extra-fields . '("citekey" "loc"))
+                       (required-tags . ("ƒ"))
+                       (header-function . #'phi-md-header)
+                       (tag-reader-function . nil)
+                       (tag-writer-function . nil)
+                       (verify-function . nil)))
+    (tlg-text . ((file-extension "markdown")
+                 (extra-fields . (ref_tlg section line))
+                 (header-function . #'phi-md-header)
+                 (required-tags . ("π"))
+                 (tag-reader-function . nil)
+                 (tag-writer-function . nil)
+                 (verify-function . nil)))
+    (journal . ((file-extension "markdown")
+                (extra-fields . nil)
+                (required-tags . nil)
+                (header-function . #'phi-journal-header)
+                (tag-reader-function . nil)
+                (tag-writer-function . nil)
+                (verify-function . nil)))))
+
+
+
+(defun phi-new-create-note (type repository &rest args)
+  (let* ((type-props (cdr (assq 'default phi-note-types)))
+         (file-extension (alist-get 'file-extension type-props))
+         (extra-fields (cdr (assq 'extra-fields type-props))) ;; FIXME
+         (header-fn (alist-get 'header-function type-props))
+         (title (read-string "title: " (plist-get args :title)))
+         (tags (read-string "tags: " (plist-get args :tags)))
+         (input-fields (plist-get args :fields))
+         (fields (cl-loop for k in extra-fields
+                          collect
+                          (cons k
+                                (read-string (format "%s: " k)
+                                             (alist-get k input-fields)))))
+         extra-fields)))
+;; (phi-new-create-note 'bib-annotation nil :fields '((citekey . "Brunoc2020")))
+
+
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1178,7 +1233,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
            (width-title (round (/ (1- width-left) 1.24)))
            (width-citekey (- width-left width-title 2))
-          (display (car candidate)))
+           (display (car candidate))
+           (citekey (match-string 5 display)))
       (cons
        (concat
         (truncate-string-to-width
@@ -1186,13 +1242,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                  (propertize (match-string 1 display) 'face 'font-lock-function-name-face)
                  (propertize (match-string 2 display) 'face 'font-lock-builtin-face))
          width-title nil ?\s t #'helm-moccur-buffer) ;; id and title
+        ;; " "
+        ;; (truncate-string-to-width
+        ;;  (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
+        ;;  width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
         " "
         (truncate-string-to-width
-         (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
-         width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
-        " "
-        (truncate-string-to-width
-         (propertize (match-string 4 display) 'face 'font-lock-keyword-face)
+         (propertize (concat (when (not (string= citekey "")) (concat citekey " ")) (match-string 4 display)) 'face 'font-lock-keyword-face)
          (- (window-body-width) 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
        (cdr candidate)))))
 
