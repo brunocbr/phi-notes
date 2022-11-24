@@ -24,8 +24,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
-;; define a global key somewhere, e. g.:
+;;; define a global key somewhere, e. g.:
 ;; 	(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
 ;;
 ;; for helm-bibtex support:
@@ -171,12 +170,12 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
-(defcustom phi-tag-symbol "#"
+(defcustom phi-hashtag-symbol "#"
   "Symbol to prepend tags"
   :type 'string
   :group 'phi)
 
-(defcustom phi-tag-regex "#[0-9a-zA-Z\\./-_]\\+"
+(defcustom phi-tag-regex "[[:alnum:]\\./-_]+"
   "RegEx to identify a valid tag"
   :type 'string
   :group 'phi)
@@ -237,6 +236,162 @@ tags:	 	%s
   :type '(choice (const :tag "No lighter" "") string)
   :safe 'stringp
   :group 'binder)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun phi-md-hashtags-str (tags)
+  "Generate a string of hashtags out of the TAGS list."
+  (mapconcat #'(lambda (t) (format "#%s" t)) tags " "))
+
+(defun phi-md-hashtags-to-list (hashtags)
+"Return a list of (valid) tags from a HASHTAGS string. Valid tag
+names conform to `phi-tag-regex'."
+(let ((start 0)
+      (tags '())
+      (hashtag-re (concat "#\\(" phi-tag-regex "\\)")))
+  (while (string-match hashtag-re hashtags start)
+         (add-to-list 'tags (match-string 1 hashtags) t)
+         (setq start (match-end 0)))
+  tags))
+
+(defun phi-journal-header (id title tags)
+  (format "\
+  Date: %s
+  Tags: %s
+
+%s
+
+"
+          (format-time-string "%e %B %Y %H:%M")
+          (or (phi-md-hashtags-str tags) "")
+          (or title (format-time-string "%A"))))
+
+(defun phi--yaml-section-wrap (s)
+  "Wrap S as a YAML section. All but the last fields will have
+double space appended to the end of the line. This is in order
+for text editors that don't identify YALM sections (e. g.
+1Writer) to display the lines correctly."
+  (let* ((lines (split-string s "\n" t " +$"))
+         (breaklines (mapconcat #'(lambda (x) (format "%s  " x)) (butlast lines) "\n"))
+         (section (concat "---\n" breaklines "\n" (car (last lines)) "\n...\n")))
+    section))
+
+(defun phi-md-frontmatter (id title &optional tags extra-fields)
+  "Return the YAML frontmatter for a Markdown note."
+  (let ((basic (format "\
+title: %S
+id:	Φ%s\n" title id))
+         (extra (phi--yaml-fields extra-fields))
+         (hashtags (format "tags: %s" (or (phi-md-hashtags-str tags) ""))))
+    (phi--yaml-section-wrap (concat basic extra hashtags))))
+
+(defun phi-construct-breadcrumb (&optional parent)
+  "Construct the breadcrumb for a new note"
+  (if (and parent (not (equal parent "")))
+      (concat phi-parent-symbol phi-link-left-bracket-symbol
+              parent phi-link-right-bracket-symbol)
+    (concat phi-originating-symbol)))
+
+(defun phi--yaml-fields (props)
+  "Return YAML fields for a alist PROPS."
+  (cl-loop for (k . v) in props concat (format "%s: %s\n" k v)))
+
+(defun phi-md-header (id title &optional tags parent-props extra-fields)
+  "Return the header for a Markdown note.
+PARENT-PROPS is a plist with parent note properties as keywords.
+EXTRA-FIELDS is an alist of fields to include in the header after
+the common fields."
+  (let* ((frontmatter (phi-md-frontmatter id title tags extra-fields))
+         (parent-id (alist-get 'id parent-props))
+         (breadcrumb (when phi-breadcrumb
+                       (concat "\n"
+                               (phi-construct-breadcrumb parent-id)
+                               "\n"))))
+    (concat frontmatter breadcrumb "\n")))
+
+(defvar phi-note-types
+  '((default . ((file-extension . "markdown")
+                (extra-fields . nil)
+                (required-tags . nil)
+                (header-function . phi-md-header)
+                (tag-reader-function . nil)
+                (tag-writer-function . nil)
+                (verify-function . nil)))
+    (bib-annotation . ((file-extension . "markdown")
+                       (extra-fields . (citekey loc))
+                       (required-tags . ("ƒ"))
+                       (header-function . phi-md-header)
+                       (tag-reader-function . nil)
+                       (tag-writer-function . nil)
+                       (verify-function . nil)))
+    (tlg-text . ((file-extension . "markdown")
+                 (extra-fields . (ref_tlg section line))
+                 (header-function . phi-md-header)
+                 (required-tags . ("π"))
+                 (tag-reader-function . nil)
+                 (tag-writer-function . nil)
+                 (verify-function . nil)))
+    (journal . ((file-extension . "markdown")
+                (extra-fields . nil)
+                (required-tags . nil)
+                (header-function . phi-journal-header)
+                (tag-reader-function . nil)
+                (tag-writer-function . nil)
+                (verify-function . nil)))))
+
+(defvar phi-new-repositories
+  '(("phi" . ((directory . "~/phi")))))
+
+(defun phi-read-tags (&optional input-tags)
+  "Interface for user input of tags. INPUT-TAGS is a default list
+of tags."
+  (let* ((input-str (phi-md-hashtags-str input-tags))
+         (hashtags (read-string "tags: " input-str)))
+    (phi-md-hashtags-to-list hashtags)))
+
+(defun phi-new-create-note (type-props repository-props &rest args)
+  "Create a new note of a certain type in a given repository,
+according to TYPE-PROPS and REPOSITORY-PROPS. The user will be
+prompted for id, title and (optional) extra fields, and the
+function will return the newly created buffer.
+
+Optional keyword arguments `:title', `:tags', `:fields' may be
+passed to supply default information; `:parent-props' to pass an
+alist of properties/fields of the parent note. This will all be
+consumed by a call to the associated `header-function' registered
+in REPOSITORY-PROPS, in order to build the header for the note.
+
+Use the optional keyword `:body' with a string to fill the note
+with some contents."
+  (let* ((file-extension (alist-get 'file-extension type-props))
+         (extra-fields (alist-get 'extra-fields type-props))
+         (header-fn (alist-get 'header-function type-props))
+         (repo-dir (expand-file-name (alist-get 'directory
+                                                repository-props)))
+         (parent-props (plist-get args :parent-props))
+         (title (read-string "title: " (plist-get args :title)))
+
+         ;; fields not matching extra-fields will be filtered:
+         (input-fields (plist-get args :fields))
+         (fields (cl-loop for k in extra-fields
+                          collect
+                          (cons k
+                                (read-string (format "%s: " k)
+                                             (alist-get k input-fields)))))
+         (tags (phi-read-tags (seq-uniq (append
+                                         (plist-get args :tags)
+                                         (alist-get 'required-tags type-props))
+                                        #'string=)))
+         (body (plist-get args :body))
+         (id "9999") ;; TODO: (phi-inc-counter repository-props)
+         (header (funcall header-fn id title tags parent-props
+                          fields)))
+    (with-current-buffer (generate-new-buffer "*New PHI Note*")
+      (insert header)
+      (when body (insert body))
+      (write-file (concat repo-dir "/" id " " title "." file-extension))
+      (phi-mode)
+      (current-buffer))))
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,13 +457,14 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
       default-directory
     (setq default-directory (phi--prompt-for-notes-path))))
 
-(defun phi--get-counter-path ()
+(defun phi--get-counter-path (&optional dir)
   "Get the full path for the counter file"
-  (concat (phi-notes-path) "/" phi-counter-file))
+  (concat (or dir (phi-notes-path)) "/" phi-counter-file))
 
-(defun phi-inc-counter ()
+(defun phi-inc-counter (&optional repository-props)
   "Increment and return current counter"
-  (let* ((phi-counter-path (phi--get-counter-path))
+  (let* ((repo-dir (alist-get 'directory repository-props))
+         (phi-counter-path (phi--get-counter-path repo-dir))
          (current-counter (phi--get-current-counter-from-file phi-counter-path)))
     (if (string= current-counter "TIMESTAMP")
         (format-time-string phi-id-timestamp-format (current-time))
@@ -318,13 +474,6 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
         (with-temp-file phi-counter-path
           (insert counter))
         counter))))
-
-(defun phi-construct-breadcrumb (&optional parent)
-  "Construct the breadcrumb for a new note"
-  (if (and parent (not (equal parent "")))
-      (concat phi-parent-symbol phi-link-left-bracket-symbol
-              parent phi-link-right-bracket-symbol)
-    (concat phi-originating-symbol)))
 
 (defun phi-id-to-wikilink (id)
   "Return a wikilink for the given `id'"
@@ -382,7 +531,7 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
         (match-string-no-properties 1))))
 
 (defun phi--is-project-p (id)
-  (string-match-p (concat phi-tag-symbol phi-project-tag) (or (phi--get-tags-from-note-as-str id) "")))
+  (string-match-p (concat phi-hashtag-symbol phi-project-tag) (or (phi--get-tags-from-note-as-str id) "")))
 
 (defun phi-get-ancestor-project-id (id)
   (and id
@@ -485,7 +634,7 @@ there's no match"
 
 (defun phi-has-tag (tag)
   (let ((tags (phi-get-note-field-contents phi-tags-field)))
-    (not (null (string-match-p (concat phi-tag-symbol tag "\\b") tags)))))
+    (not (null (string-match-p (concat phi-hashtag-symbol tag "\\b") tags)))))
 
 (defun phi-set-note-field-contents (field value)
   "Insert or update a field in the note's YAML frontmatter."
@@ -720,6 +869,7 @@ there's no match"
   (let* ((tags (shell-command-to-string (concat
                                           "grep -I -ohir -e "
                                           (shell-quote-argument
+                                           phi-hashtag-symbol
                                            phi-tag-regex)
                                           " "
                                           (phi-notes-path 'enforce-path) " 2>/dev/null")))
@@ -881,7 +1031,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                   (current-id (phi-get-current-note-id))
                   (tags (read-string "tags: " (concat (when current-id
                                                         (concat (phi--get-tags-from-note-as-str current-id) " "))
-                                                      phi-tag-symbol phi-annotation-tag)))
+                                                      phi-hashtag-symbol phi-annotation-tag)))
                   (loc (read-string "loc: " "0"))
                   (id (phi-inc-counter))
                   (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
@@ -1033,7 +1183,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
           (phi-set-note-field-contents phi-project-field project-link))))
   (or (phi-has-tag phi-project-tag) ;; add project tag to current note, if needed
-      (phi-set-note-field-contents phi-tags-field (concat phi-tag-symbol phi-project-tag
+      (phi-set-note-field-contents phi-tags-field (concat phi-hashtag-symbol phi-project-tag
                                                           " " (phi-get-note-field-contents phi-tags-field))))
   (helm-phi-insert-title-and-link-action candidate))
 
@@ -1126,7 +1276,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
            (width-title (round (/ (1- width-left) 1.24)))
            (width-citekey (- width-left width-title 2))
-          (display (car candidate)))
+           (display (car candidate))
+           (citekey (match-string 5 display)))
       (cons
        (concat
         (truncate-string-to-width
@@ -1134,13 +1285,13 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                  (propertize (match-string 1 display) 'face 'font-lock-function-name-face)
                  (propertize (match-string 2 display) 'face 'font-lock-builtin-face))
          width-title nil ?\s t #'helm-moccur-buffer) ;; id and title
+        ;; " "
+        ;; (truncate-string-to-width
+        ;;  (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
+        ;;  width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
         " "
         (truncate-string-to-width
-         (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
-         width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
-        " "
-        (truncate-string-to-width
-         (propertize (match-string 4 display) 'face 'font-lock-keyword-face)
+         (propertize (concat (when (not (string= citekey "")) (concat citekey " ")) (match-string 4 display)) 'face 'font-lock-keyword-face)
          (- (window-body-width) 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
        (cdr candidate)))))
 
