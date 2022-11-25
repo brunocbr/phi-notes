@@ -254,7 +254,7 @@ names conform to `phi-tag-regex'."
          (setq start (match-end 0)))
   tags))
 
-(defun phi-journal-header (id title tags)
+(defun phi-journal-header (id title tags _parent-props _extra-fields)
   (format "\
   Date: %s
   Tags: %s
@@ -263,7 +263,7 @@ names conform to `phi-tag-regex'."
 
 "
           (format-time-string "%e %B %Y %H:%M")
-          (or (phi-md-hashtags-str tags) "")
+          (phi-md-hashtags-str tags)
           (or title (format-time-string "%A"))))
 
 (defun phi--yaml-section-wrap (s)
@@ -309,29 +309,34 @@ the common fields."
                                "\n"))))
     (concat frontmatter breadcrumb "\n")))
 
+
 (defvar phi-note-types
-  '((default . ((file-extension . "markdown")
+  '((default . ((description . "Default")
+                (file-extension . "markdown")
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-md-header)
                 (tag-reader-function . nil)
                 (tag-writer-function . nil)
                 (verify-function . nil)))
-    (bib-annotation . ((file-extension . "markdown")
+    (bib-annotation . ((description . "Bibliographical annotation")
+                       (file-extension . "markdown")
                        (extra-fields . (citekey loc))
                        (required-tags . ("ƒ"))
                        (header-function . phi-md-header)
                        (tag-reader-function . nil)
                        (tag-writer-function . nil)
                        (verify-function . nil)))
-    (tlg-text . ((file-extension . "markdown")
+    (tlg-text . ((description . "TLG Text")
+                 (file-extension . "markdown")
                  (extra-fields . (ref_tlg section line))
                  (header-function . phi-md-header)
                  (required-tags . ("π"))
                  (tag-reader-function . nil)
                  (tag-writer-function . nil)
                  (verify-function . nil)))
-    (journal . ((file-extension . "markdown")
+    (journal . ((description . "Journal entry")
+                (file-extension . "markdown")
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-journal-header)
@@ -339,6 +344,7 @@ the common fields."
                 (tag-writer-function . nil)
                 (verify-function . nil)))))
 
+;; TODO: experimenting...
 (defvar phi-new-repositories
   '(("phi" . ((directory . "~/phi")))))
 
@@ -349,11 +355,10 @@ of tags."
          (hashtags (read-string "tags: " input-str)))
     (phi-md-hashtags-to-list hashtags)))
 
-(defun phi-new-create-note (type-props repository-props &rest args)
-  "Create a new note of a certain type in a given repository,
-according to TYPE-PROPS and REPOSITORY-PROPS. The user will be
-prompted for id, title and (optional) extra fields, and the
-function will return the newly created buffer.
+(defun phi-new-create-note (type repo-dir &rest args)
+  "Create a new note of the TYPE object and write it to REPO-DIR.
+The user will be prompted for id, title and (optional) extra
+fields, and the function will return the newly created buffer.
 
 Optional keyword arguments `:title', `:tags', `:fields' may be
 passed to supply default information; `:parent-props' to pass an
@@ -363,11 +368,10 @@ in REPOSITORY-PROPS, in order to build the header for the note.
 
 Use the optional keyword `:body' with a string to fill the note
 with some contents."
-  (let* ((file-extension (alist-get 'file-extension type-props))
+  (let* ((type-props (alist-get type phi-note-types))
+         (file-extension (alist-get 'file-extension type-props))
          (extra-fields (alist-get 'extra-fields type-props))
          (header-fn (alist-get 'header-function type-props))
-         (repo-dir (expand-file-name (alist-get 'directory
-                                                repository-props)))
          (parent-props (plist-get args :parent-props))
          (title (read-string "title: " (plist-get args :title)))
 
@@ -389,9 +393,50 @@ with some contents."
     (with-current-buffer (generate-new-buffer "*New PHI Note*")
       (insert header)
       (when body (insert body))
-      (write-file (concat repo-dir "/" id " " title "." file-extension))
+      (write-file (concat repo-dir "/" id
+                          (when (not (string= title "")) (concat " " title)) "." file-extension))
       (phi-mode)
       (current-buffer))))
+
+(defun phi-prompt-for-type ()
+  "Prompt user to select a note type from its description, and return the type."
+  (let* ((selection (mapcar (lambda (x)
+                              (cons (alist-get 'description x) x))
+                            phi-note-types))
+         (choice (completing-read "Select a note type: "
+                                  selection)))
+    (cadr (assoc-string choice selection))))
+
+;; (phi-prompt-for-type)
+
+(defun phi-new-note (&rest args)
+  "Create a new note. If the optional keyword argument `:type' is
+ `nil', the user will be prompted. If the current buffer has a
+ file in a valid repository location, the new note will be
+ created in the same repository by default. This can be overriden
+ with `:repository' (use 'prompt to force prompting).
+
+Other keyword arguments will be passed to the more specific
+functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
+
+  ;; A function to create descendant notes should call this one with
+  ;; the apropriate keyword args
+  (interactive)
+  (let* ((repository-arg (plist-get args :repository))
+         (repository
+          (if (eq repository-arg 'prompt)
+              (phi--prompt-for-repository)
+            (or
+             repository-arg
+             (phi-repository-for-path (buffer-file-name))
+             (phi--prompt-for-repository))))
+         (repo-dir (cadr (assoc repository phi-repository-alist)))
+         (type (or (plist-get args :type)
+                   (phi-prompt-for-type)))
+         (buf (apply #'phi-new-create-note type repo-dir args)))
+    (phi--pop-to-buffer-maybe buf))) ;; FIXME C-u not working
+
+;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -434,12 +479,15 @@ with some contents."
           (setq phi-repository-alist (cons params nil)))))
     (customize-variable 'phi-repository-alist)))
 
-(defun phi--prompt-for-notes-path ()
+(defun phi--prompt-for-repository ()
   (unless phi-repository-alist (error "No repository set! Use `phi-add-repository'."))
+  (completing-read "Select a note repository: "
+                   phi-repository-alist))
+
+(defun phi--prompt-for-notes-path ()
   (if (equal (length phi-repository-alist) 1)
       (cadr (car phi-repository-alist))
-    (cadr (assoc (completing-read "Select a note repository: "
-                                  phi-repository-alist) phi-repository-alist))))
+    (cadr (assoc (phi--prompt-for-repository) phi-repository-alist))))
 
 ;; TODO: should refactor all of this
 (defun phi--enforce-directory ()
