@@ -387,7 +387,7 @@ with some contents."
                                          (alist-get 'required-tags type-props))
                                         #'string=)))
          (body (plist-get args :body))
-         (id "9999") ;; TODO: (phi-inc-counter repository-props)
+         (id (phi-inc-counter repo-dir))
          (header (funcall header-fn id title tags parent-props
                           fields)))
     (with-current-buffer (generate-new-buffer "*New PHI Note*")
@@ -406,8 +406,6 @@ with some contents."
          (choice (completing-read "Select a note type: "
                                   selection)))
     (cadr (assoc-string choice selection))))
-
-;; (phi-prompt-for-type)
 
 (defun phi-new-note (&rest args)
   "Create a new note. If the optional keyword argument `:type' is
@@ -509,10 +507,9 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Get the full path for the counter file"
   (concat (or dir (phi-notes-path)) "/" phi-counter-file))
 
-(defun phi-inc-counter (&optional repository-props)
+(defun phi-inc-counter (&optional repo-dir)
   "Increment and return current counter"
-  (let* ((repo-dir (alist-get 'directory repository-props))
-         (phi-counter-path (phi--get-counter-path repo-dir))
+  (let* ((phi-counter-path (phi--get-counter-path repo-dir))
          (current-counter (phi--get-current-counter-from-file phi-counter-path)))
     (if (string= current-counter "TIMESTAMP")
         (format-time-string phi-id-timestamp-format (current-time))
