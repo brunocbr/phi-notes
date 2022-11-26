@@ -309,34 +309,52 @@ the common fields."
                                "\n"))))
     (concat frontmatter breadcrumb "\n")))
 
+(defun phi-md-read-tags (buffer)
+  "Read tags in the frontmatter of BUFFER. Return a list of tags."
+  (let ((hashtags (phi-get-note-field-contents "tags" buffer)))
+    (phi-md-hashtags-to-list hashtags)))
+
+(defun phi-basic-type-verification-p (buffer type)
+  "Return `t' if the BUFFER conforms to basic verification for note
+of type TYPE.
+File extension and the required tags are verified."
+  (let* ((type-props (alist-get type phi-note-types))
+         (type-exts (alist-get 'file-extensions type-props))
+         (file-ext (file-name-extension (buffer-file-name buffer)))
+         (req-tags (alist-get 'required-tags type-props))
+         (read-tags-fn (alist-get 'tag-reader-function type-props))
+         (tags (funcall read-tags-fn buffer)))
+    (cond ((and (some #'(lambda (x) (string= file-ext x)) type-exts)
+                (every #'(lambda (x) (memq x tags)) req-tags)) t)
+          (t nil))))
 
 (defvar phi-note-types
   '((default . ((description . "Default")
-                (file-extension . "markdown")
+                (file-extensions . ("markdown"))
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-md-header)
-                (tag-reader-function . nil)
+                (tag-reader-function . phi-md-read-tags)
                 (tag-writer-function . nil)
                 (verify-function . nil)))
     (bib-annotation . ((description . "Bibliographical annotation")
-                       (file-extension . "markdown")
+                       (file-extensions . ("markdown"))
                        (extra-fields . (citekey loc))
                        (required-tags . ("ƒ"))
                        (header-function . phi-md-header)
-                       (tag-reader-function . nil)
+                       (tag-reader-function . phi-md-read-tags)
                        (tag-writer-function . nil)
                        (verify-function . nil)))
     (tlg-text . ((description . "TLG Text")
-                 (file-extension . "markdown")
+                 (file-extensions . ("markdown"))
                  (extra-fields . (ref_tlg section line))
                  (header-function . phi-md-header)
                  (required-tags . ("π"))
-                 (tag-reader-function . nil)
+                 (tag-reader-function . phi-md-read-tags)
                  (tag-writer-function . nil)
                  (verify-function . nil)))
     (journal . ((description . "Journal entry")
-                (file-extension . "markdown")
+                (file-extensions . ("markdown"))
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-journal-header)
@@ -369,7 +387,7 @@ in REPOSITORY-PROPS, in order to build the header for the note.
 Use the optional keyword `:body' with a string to fill the note
 with some contents."
   (let* ((type-props (alist-get type phi-note-types))
-         (file-extension (alist-get 'file-extension type-props))
+         (file-extension (first (alist-get 'file-extensions type-props)))
          (extra-fields (alist-get 'extra-fields type-props))
          (header-fn (alist-get 'header-function type-props))
          (parent-props (plist-get args :parent-props))
@@ -400,7 +418,7 @@ with some contents."
 
 (defun phi-prompt-for-type ()
   "Prompt user to select a note type from its description, and return the type."
-  (let* ((selection (mapcar (lambda (x)
+  (let* ((selection (mapcar #'(lambda (x)
                               (cons (alist-get 'description x) x))
                             phi-note-types))
          (choice (completing-read "Select a note type: "
@@ -435,6 +453,7 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
     (phi--pop-to-buffer-maybe buf))) ;; FIXME C-u not working
 
 ;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
+
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,18 +668,22 @@ there's no match"
                       (delete-other-windows)))
     (phi-mode))))
 
-(defun phi-get-note-field-contents (field)
-  "Return the specified field contents for the current note"
-  (save-excursion
-    (goto-char (point-min))
-    (if (looking-at-p "---") (forward-line 1))
-    (let ((target-pos (point))
-          (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
-      (goto-char target-pos)
-      (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
-                (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
-                (looking-at (concat ".*$")))
-          (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))
+(defun phi-get-note-field-contents (field &optional buffer)
+  "Return the specified field contents for BUFFER. If BUFFER is
+`nil', work with the current buffer."
+  (let ((buf (or buffer
+                 (current-buffer))))
+    (with-current-buffer buf
+      (save-excursion
+        (goto-char (point-min))
+        (if (looking-at-p "---") (forward-line 1))
+        (let ((target-pos (point))
+              (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+          (goto-char target-pos)
+          (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
+                    (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
+                    (looking-at (concat ".*$")))
+              (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))))
 
 (defun phi--get-tags-from-note-as-str (id)
   "Get a string of the tags from a given note `ID'"
