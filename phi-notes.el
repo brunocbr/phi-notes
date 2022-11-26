@@ -336,7 +336,7 @@ File extension and the required tags are verified."
                 (header-function . phi-md-header)
                 (tag-reader-function . phi-md-read-tags)
                 (tag-writer-function . nil)
-                (verify-function . nil)))
+                (type-verification-function . phi-basic-type-verification-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
                        (file-extensions . ("markdown"))
                        (extra-fields . (citekey loc))
@@ -344,7 +344,7 @@ File extension and the required tags are verified."
                        (header-function . phi-md-header)
                        (tag-reader-function . phi-md-read-tags)
                        (tag-writer-function . nil)
-                       (verify-function . nil)))
+                       (type-verification-function . phi-basic-type-verification-p)))
     (tlg-text . ((description . "TLG Text")
                  (file-extensions . ("markdown"))
                  (extra-fields . (ref_tlg section line))
@@ -352,7 +352,7 @@ File extension and the required tags are verified."
                  (required-tags . ("π"))
                  (tag-reader-function . phi-md-read-tags)
                  (tag-writer-function . nil)
-                 (verify-function . nil)))
+                 (type-verification-function . phi-basic-type-verification-p)))
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
                 (extra-fields . nil)
@@ -360,7 +360,7 @@ File extension and the required tags are verified."
                 (header-function . phi-journal-header)
                 (tag-reader-function . nil)
                 (tag-writer-function . nil)
-                (verify-function . nil)))))
+                (type-verification-function . phi-basic-type-verification-p)))))
 
 ;; TODO: experimenting...
 (defvar phi-new-repositories
