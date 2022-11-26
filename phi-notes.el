@@ -314,18 +314,39 @@ the common fields."
   (let ((hashtags (phi-get-note-field-contents "tags" buffer)))
     (phi-md-hashtags-to-list hashtags)))
 
+;; TODO: 1) implement merge with custom types; 2) change everywhere where type
+;; props are read to get them from a merged alist.
+(defun phi--type-prop (prop type)
+  "Return the property PROP for note TYPE"
+  (let ((type-props (alist-get type phi-note-types)))
+    (alist-get prop type-props)))
+
 (defun phi-basic-type-verification-p (buffer type)
   "Return `t' if the BUFFER conforms to basic verification for note
-of type TYPE.
-File extension and the required tags are verified."
+of type TYPE. The conditions tested are the buffer file name having valid
+extension and the note having all required tags."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
          (file-ext (file-name-extension (buffer-file-name buffer)))
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
-         (tags (funcall read-tags-fn buffer)))
-    (and (member file-ext type-exts)
-         (every #'(lambda (x) (memq x tags)) req-tags) t)))
+         (tags (when (functionp read-tags-fn) (funcall read-tags-fn buffer))))
+    (cond ((and (member file-ext type-exts)
+                (every #'(lambda (x) (member x tags)) req-tags)) t)
+          (t nil))))
+
+(defun phi-is-type-p (buffer type)
+  "Return `t' if BUFFER complies with the appropriate verification for type TYPE."
+  (let ((verification-fn (phi--type-prop 'type-verification-function type)))
+    (when (functionp verification-fn) (funcall verification-fn buffer type))))
+
+(defun phi-guess-type (buffer)
+  "Return a guess of the note type for BUFFER. The function will
+check the note types alist in reverse order (assuming this should
+map from more to less specific types)."
+  (let ((type-list (mapcar #'car (reverse phi-note-types))))
+    (cl-loop for type in type-list
+             thereis (when (phi-is-type-p buffer type) type))))
 
 (defvar phi-note-types
   '((default . ((description . "Default")
@@ -359,7 +380,7 @@ File extension and the required tags are verified."
                 (header-function . phi-journal-header)
                 (tag-reader-function . nil)
                 (tag-writer-function . nil)
-                (type-verification-function . phi-basic-type-verification-p)))))
+                (type-verification-function . nil)))))
 
 ;; TODO: experimenting...
 (defvar phi-new-repositories
