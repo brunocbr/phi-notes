@@ -324,9 +324,8 @@ File extension and the required tags are verified."
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
          (tags (funcall read-tags-fn buffer)))
-    (cond ((and (some #'(lambda (x) (string= file-ext x)) type-exts)
-                (every #'(lambda (x) (memq x tags)) req-tags)) t)
-          (t nil))))
+    (and (member file-ext type-exts)
+         (every #'(lambda (x) (memq x tags)) req-tags) t)))
 
 (defvar phi-note-types
   '((default . ((description . "Default")
