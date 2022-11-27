@@ -357,11 +357,14 @@ the appropriate metadata : `:description', `:id', `:repository'."
          (target-id (plist-get link :id))
          (repository (or (plist-get link :repository)
                          (phi-buffer-repository)))
-         (link-pre (or (plist-get link :prepend) ""))
-         (link-post (or (plist-get link :append) "")))
+         (link-pre (plist-get link :prepend))
+         (link-post (plist-get link :append)))
     (with-current-buffer buffer
-      (insert (org-link-make-string (concat repository ":" target-id)
-                                    description)))))
+      (insert
+       (concat link-pre
+               (org-link-make-string (concat repository ":" target-id)
+                                     description)
+               link-post)))))
 
 (defun phi-org-header (id title &optional tags parent-props extra-fields)
   "Header for notes using Org format."
@@ -1275,7 +1278,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (cl-loop for key in keys
              do
              (let* ((entry (bibtex-completion-get-entry key))
-                    (is-org? (eql 'org-mode major-mode))
                     (year (or (bibtex-completion-get-value "year" entry)
                               (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
                     (author (bibtex-completion-get-value "author" entry))
@@ -1287,9 +1289,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                         :fields fields
                                         :type 'bib-annotation
                                         :link-prepend "- "
-                                        :link-append (newline))
-                 (if is-org?  ;; TODO
-                     (phi-bibtex-org-insert-bib-action (list key))))))))
+                                        :link-append (newline)))))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
