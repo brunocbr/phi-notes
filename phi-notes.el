@@ -506,6 +506,7 @@ with some contents."
                                   selection)))
     (cadr (assoc-string choice selection))))
 
+;;;###autoload
 (defun phi-new-note (&rest args)
   "Create a new note.
 
@@ -540,6 +541,7 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
 
 ;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
 
+;;;###autoload
 (defun phi-create-descendant (&rest args)
   "Create a descendant note from the current buffer. Use `:with-buffer' override.
 
@@ -943,11 +945,7 @@ there's no match"
   (phi-new-common-note body ""))
 
 ;;;###autoload
-(defun phi-new-descendant-note ()
-  "Create a child linked note. `C-u' to create note in other window."
-  (interactive)
-  (phi--enforce-directory)
-  (phi-new-common-note nil nil t))
+(define-obsolete-function-alias 'phi-new-descendant-note 'phi-create-descendant "2022-11-27")
 
 ;;;###autoload
 (defun phi-kill-to-new-note (start end)
@@ -955,8 +953,8 @@ there's no match"
   (interactive "r")
   (let ((body (buffer-substring-no-properties start end))
         (buffer (current-buffer)))
-    (phi--enforce-directory)
-    (phi-new-common-note body (phi-get-current-note-id) t)
+    (phi-create-descendant :body body
+                           :title (phi-extract-title-from-body body))
     (with-current-buffer buffer
       (kill-region start end))
     (pop-to-buffer buffer)))
@@ -966,8 +964,8 @@ there's no match"
   "Yank to linked note. `C-u' to create note in other window."
   (interactive)
   (let ((body (substring-no-properties (car kill-ring))))
-    (phi--enforce-directory)
-    (phi-new-common-note body nil nil)))
+    (phi-create-descendant :body body
+                           :title (phi-extract-title-from-body body))))
 
 (defun phi--search-forward-pp ()
   (re-search-forward "(\\(p\\{1,2\\}\.\\) +\\([0-9a-zA-Z\-,;\. ]+\\))" nil t))
