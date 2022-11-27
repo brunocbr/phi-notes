@@ -945,12 +945,15 @@ there's no match"
         (pop-to-buffer buffer)
         (select-window w)))))
 
+
+
 ;;;###autoload
 (defun phi-new-originating-note (&optional body)
   "Create an originating note. `C-u' to create note in other window."
   (interactive)
-  (setq default-directory (phi--prompt-for-notes-path))
-  (phi-new-common-note body ""))
+  (phi-new-note :body body))
+
+(make-obsolete 'phi-new-originating-note 'phi-new-note "2022-11-27")
 
 ;;;###autoload
 (define-obsolete-function-alias 'phi-new-descendant-note 'phi-create-descendant "2022-11-27")
@@ -1455,7 +1458,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    (list
     (helm-build-dummy-source "Create a new note"
       :action (helm-make-actions "Create a new note"
-                                 'phi-new-originating-note)))))
+                                 'phi-new-note)))))
 
 (defun helm-phi-formatter (candidate)
   (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
