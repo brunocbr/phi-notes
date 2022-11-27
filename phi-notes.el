@@ -454,10 +454,11 @@ of tags."
          (hashtags (read-string "tags: " input-str)))
     (phi-md-hashtags-to-list hashtags)))
 
-(defun phi-new-create-note (type repo-dir &rest args)
-  "Create a new note of the TYPE object and write it to REPO-DIR.
-The user will be prompted for id, title and (optional) extra
-fields, and the function will return the newly created buffer.
+(defun phi-create-note (type repo-dir &rest args)
+  "Non-interactive function to create a new note of the type TYPE
+and write it to REPO-DIR. The user will be prompted for id, title
+and (optional) extra fields, and the function will return the
+newly created buffer.
 
 Optional keyword arguments `:title', `:tags', `:fields' may be
 passed to supply default information; `:parent-props' to pass an
@@ -537,7 +538,7 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
          (repo-dir (cadr (assoc repository phi-repository-alist)))
          (type (or (plist-get args :type)
                    (phi-prompt-for-type)))
-         (buf (apply #'phi-new-create-note type repo-dir args)))
+         (buf (apply #'phi-create-note type repo-dir args)))
     (phi--pop-to-buffer-maybe buf)
     buf)) ;; FIXME C-u not working
 
@@ -910,6 +911,8 @@ there's no match"
       (phi-mode)
       (current-buffer))))
 
+(make-obsolete 'phi-create-common-note 'phi-create-note "2022-11-27")
+
 (defun phi-extract-title-from-body (body)
   "Extract title from the first line of `body'"
   (with-temp-buffer
@@ -945,7 +948,7 @@ there's no match"
         (pop-to-buffer buffer)
         (select-window w)))))
 
-
+(make-obsolete 'phi-new-common-note 'phi-new-note "2022-11-27")
 
 ;;;###autoload
 (defun phi-new-originating-note (&optional body)
