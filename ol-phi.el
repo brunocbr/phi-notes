@@ -21,7 +21,6 @@ corresponding to repository NAME."
        (let* ((id (phi-get-current-note-id))
               (link (format "%s:%s" name id))
               (title (phi-get-current-note-title)))
-         (message (format "store fn for repository %s" name))
          (org-link-store-props
           :type name
           :link link
