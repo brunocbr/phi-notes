@@ -334,6 +334,16 @@ frontmatter of BUFFER."
                                      (string-trim-right (match-string-no-properties 2))) t)))
       fields)))
 
+(defun phi-md-insert-link (buffer link)
+  "Function to insert a wikilink for Markdown notes in BUFFER. LINK
+is a plist with appropriate metadata: `:description', `:id',
+`:repository'"
+  (let* ((description (plist-get link :description))
+         (target-id (plist-get link :id))
+         (repository (plist-get link :repository)))
+  (with-current-buffer buffer
+    (insert (format "%s [[%s]]" description target-id)))))
+
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
 (defun phi--type-prop (prop type)
@@ -397,6 +407,7 @@ map from more to less specific types)."
                 (tag-reader-function . phi-md-read-tags)
                 (tag-writer-function . nil)
                 (field-reader-function . phi-md-get-fields)
+                (insert-link-function . phi-md-insert-link)
                 (type-verification-function . phi-basic-type-verification-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
                        (file-extensions . ("markdown"))
@@ -406,6 +417,7 @@ map from more to less specific types)."
                        (tag-reader-function . phi-md-read-tags)
                        (tag-writer-function . nil)
                        (field-reader-function . phi-md-get-fields)
+                       (insert-link-function . phi-md-insert-link)
                        (type-verification-function . phi-basic-type-verification-p)))
     (tlg-text . ((description . "TLG Text")
                  (file-extensions . ("markdown"))
@@ -415,6 +427,7 @@ map from more to less specific types)."
                  (tag-reader-function . phi-md-read-tags)
                  (tag-writer-function . nil)
                  (field-reader-function . phi-md-get-fields)
+                 (insert-link-function . phi-md-insert-link)
                  (type-verification-function . phi-basic-type-verification-p)))
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
@@ -424,6 +437,7 @@ map from more to less specific types)."
                 (tag-reader-function . nil)
                 (tag-writer-function . nil)
                 (field-reader-function . nil) ;; TODO
+                (insert-link-function . phi-md-insert-link)
                 (type-verification-function . nil)))))
 
 ;; TODO: experimenting...
@@ -529,13 +543,14 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
   "Create a descendant note from the current buffer. Use `:with-buffer' override.
 
 Keyword arguments may override `:repository', `:type',
-`:parent-props', `:tags' and `:fields'"
+`:parent-props', `:tags' and `:fields' for the new note."
   (interactive)
   (let* ((buf (or (plist-get args :with-buffer)
                   (current-buffer)))
          (type (phi-guess-type buf))
          (get-fields-fn (phi--type-prop 'field-reader-function type))
          (get-tags-fn (phi--type-prop 'tag-reader-function type))
+         (insert-link-fn (phi--type-prop 'insert-link-function type))
          (cur-fields (when (functionp get-fields-fn)
                        (funcall get-fields-fn buf)))
          (cur-tags (when (functionp get-tags-fn)
@@ -553,8 +568,8 @@ Keyword arguments may override `:repository', `:type',
          (new-props (phi-note-props new-buf))
          (new-id (alist-get 'id new-props))
          (new-title (alist-get 'title new-props)))
-    (with-current-buffer buf
-      (insert (format "%s [[%s]]" new-title new-id)))
+    (when (functionp insert-link-fn)
+      (funcall insert-link-fn buf (list :id new-id :description new-title)))
     new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
