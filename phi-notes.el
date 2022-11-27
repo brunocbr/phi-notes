@@ -493,10 +493,13 @@ with some contents."
 
 (defun phi-new-note (&rest args)
   "Create a new note. If the optional keyword argument `:type' is
- `nil', the user will be prompted. If the current buffer has a
- file in a valid repository location, the new note will be
- created in the same repository by default. This can be overriden
- with `:repository' (use 'prompt to force prompting).
+ `nil', the user will be prompted.
+
+By default the user will be prompted for a note repository,
+unless `:repository' is used with repository name. Use 'current
+to create the new note in the same repository as the current
+buffer, without asking (except if the the current buffer file is
+not in a valid repository path).
 
 Other keyword arguments will be passed to the more specific
 functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
@@ -505,13 +508,15 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
   ;; the apropriate keyword args
   (interactive)
   (let* ((repository-arg (plist-get args :repository))
+         (def-repository (phi-repository-for-path
+                          (buffer-file-name)))
          (repository
-          (if (eq repository-arg 'prompt)
-              (phi--prompt-for-repository)
-            (or
-             repository-arg
-             (phi-repository-for-path (buffer-file-name))
-             (phi--prompt-for-repository))))
+          (cond ((eq repository-arg 'current)
+                 (or def-repository
+                     (phi--prompt-for-repository def-repository)))
+                ((eq repository-arg nil)
+                 (phi--prompt-for-repository def-repository))
+                (t repository-arg)))
          (repo-dir (cadr (assoc repository phi-repository-alist)))
          (type (or (plist-get args :type)
                    (phi-prompt-for-type)))
@@ -530,8 +535,6 @@ Keyword arguments may override `:repository', `:type',
   (let* ((buf (or (plist-get args :with-buffer)
                   (current-buffer)))
          (type (phi-guess-type buf))
-         (repo-dir (file-name-directory (buffer-file-name buf))) ;; TODO: not elegant?
-         (repository (phi-repository-for-path repo-dir))
          (get-fields-fn (phi--type-prop 'field-reader-function type))
          (get-tags-fn (phi--type-prop 'tag-reader-function type))
          (cur-fields (when (functionp get-fields-fn)
@@ -541,11 +544,11 @@ Keyword arguments may override `:repository', `:type',
          ;; (extra-fields (seq-filter #'(lambda (x) (not (memq (car x) '(title id tags)))) cur-fields))
          (cur-props (phi-note-props buf))
          (new-buf
-          (phi-new-note :repository repository
+          (phi-new-note :repository 'current
                         :type type
                         :parent-props cur-props
                         :tags cur-tags
-                        :fields cur-fields))
+                        :fields cur-fields)) ;; TODO: args should override
          (new-props (phi-note-props new-buf))
          (new-id (alist-get 'id new-props))
          (new-title (alist-get 'title new-props)))
@@ -593,10 +596,10 @@ Keyword arguments may override `:repository', `:type',
           (setq phi-repository-alist (cons params nil)))))
     (customize-variable 'phi-repository-alist)))
 
-(defun phi--prompt-for-repository ()
+(defun phi--prompt-for-repository (&optional def)
   (unless phi-repository-alist (error "No repository set! Use `phi-add-repository'."))
   (completing-read "Select a note repository: "
-                   phi-repository-alist))
+                   phi-repository-alist nil nil nil nil def))
 
 (defun phi--prompt-for-notes-path ()
   (if (equal (length phi-repository-alist) 1)
