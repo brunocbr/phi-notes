@@ -249,9 +249,10 @@ names conform to `phi-tag-regex'."
 (let ((start 0)
       (tags '())
       (hashtag-re (concat "#\\(" phi-tag-regex "\\)")))
-  (while (string-match hashtag-re hashtags start)
-         (add-to-list 'tags (match-string 1 hashtags) t)
-         (setq start (match-end 0)))
+  (when (stringp hashtags)
+        (while (string-match hashtag-re hashtags start)
+          (add-to-list 'tags (match-string 1 hashtags) t)
+          (setq start (match-end 0))))
   tags))
 
 (defun phi-journal-header (id title tags _parent-props _extra-fields)
@@ -320,19 +321,21 @@ frontmatter of BUFFER."
   (save-excursion
     (goto-char (point-min))
     ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
-    (if (looking-at-p "---") (forward-line 1) (error "No YAML frontmatter found"))
-    (let ((target-pos (point))
-          (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
-          (fields nil))
-      ;; Return after search-forward moved point.
-      (goto-char target-pos)
-      (if (not yaml-end-pos)
-          (error "YAML block end boundary not found")
-        ;; If YAML block is found, collect the fields
-        (while (search-forward-regexp "^\\([[:alnum:]+/_-]+\\):[ \t]*\\(.*\\)$" yaml-end-pos t)
-          (add-to-list 'fields (cons (intern (match-string-no-properties 1))
-                                     (string-trim-right (match-string-no-properties 2))) t)))
-      fields)))
+    (if (looking-at-p "---")
+        (let ((target-pos (point))
+              (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
+              (fields nil))
+          (forward-line 1)
+          ;; Return after search-forward moved point.
+          (goto-char target-pos)
+          (if (not yaml-end-pos)
+              (error "YAML block end boundary not found")
+            ;; If YAML block is found, collect the fields
+            (while (search-forward-regexp "^\\([[:alnum:]+/_-]+\\):[ \t]*\\(.*\\)$" yaml-end-pos t)
+              (add-to-list 'fields (cons (intern (match-string-no-properties 1))
+                                         (string-trim-right (match-string-no-properties 2))) t)))
+          fields)
+      nil)))
 
 (defun phi-md-insert-link (buffer link)
   "Function to insert a wikilink for Markdown notes in BUFFER. LINK
@@ -345,6 +348,41 @@ is a plist with appropriate metadata: `:description', `:id',
          (link-post (or (plist-get link :append) "")))
   (with-current-buffer buffer
     (insert (format "%s%s [[%s]]%s" link-pre description target-id link-post)))))
+
+(defun phi-org-insert-link (buffer link)
+  "Function to insert a link in an Org BUFFER. LINK is a plist with
+the appropriate metadata : `:description', `:id', `:repository'."
+  (require 'ol)
+  (let* ((description (plist-get link :description))
+         (target-id (plist-get link :id))
+         (repository (or (plist-get link :repository)
+                         (phi-buffer-repository)))
+         (link-pre (or (plist-get link :prepend) ""))
+         (link-post (or (plist-get link :append) "")))
+    (with-current-buffer buffer
+      (insert (org-link-make-string (concat repository ":" target-id)
+                                    description)))))
+
+(defun phi-org-header (id title &optional tags parent-props extra-fields)
+  "Header for notes using Org format."
+  (let* ((parent-id (alist-get 'id parent-props))
+         (filetags (when tags
+                       (concat ":"
+                               (string-join tags ":")
+                               ":")))
+         (extras (mapcar
+                  #'(lambda (x) (format "#+%s: %s\n"
+                                        (upcase (symbol-name (car x)))
+                                        (cdr x)))
+                  extra-fields)))
+    (concat
+     (format "\
+#+TITLE: %s
+#+ID: %s\n" title id)
+     (when parent-id (format "#+UPLINK: %s\n" parent-id))
+     (when filetags (format "#+FILETAGS: %s\n" filetags))
+     (when extras (apply #'concat extras))
+     "\n")))
 
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
@@ -376,6 +414,9 @@ type-specific extra-fields."
                 (every #'(lambda (x) (member x tags)) req-tags)) t)
           ((and (member file-ext type-exts)
                 (every #'(lambda (x) (memq x fields)) type-fields)) t)
+          ((and (null tags)
+                (null req-tags)
+                (member file-ext type-exts)) t)
           (t nil))))
 
 (defun phi-is-type-p (buffer type)
@@ -432,6 +473,15 @@ map from more to less specific types)."
                  (field-reader-function . phi-md-get-fields)
                  (insert-link-function . phi-md-insert-link)
                  (type-check-function . phi-basic-type-check-p)))
+    (org-default . ((description . "Org file")
+                    (file-extensions . ("org"))
+                    (extra-fields . (extra1 extra2))
+                    (required-tags . nil)
+                    (header-function . phi-org-header)
+                    (tag-reader-function . nil)
+                    (field-reader-function . nil)
+                    (insert-link-function . phi-org-insert-link)
+                    (type-check-function . phi-basic-type-check-p)))
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
                 (extra-fields . nil)
@@ -578,10 +628,12 @@ Keyword arguments may override `:repository', `:type',
          (new-id (alist-get 'id new-props))
          (new-title (alist-get 'title new-props))
          (link-pre (plist-get args :link-prepend))
-         (link-post (plist-get args :link-append)))
+         (link-post (plist-get args :link-append))
+         (link-repo (phi-buffer-repository buf)))
     (when (functionp insert-link-fn)
       (funcall insert-link-fn buf (list :id new-id :description new-title
-                                        :prepend link-pre :append link-post)))
+                                        :prepend link-pre :append link-post
+                                        :repository link-repo)))
     new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
