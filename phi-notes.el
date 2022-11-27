@@ -274,12 +274,13 @@ names conform to `phi-tag-regex'."
       (if (and (re-search-forward
                 (concat "^  "
                         (capitalize (symbol-name field))
-                        ":\\s-*\\(.+\\)$") nil t))
+                        ":\\s-") nil t)
+               (looking-at "\\(.+\\)$"))
           (string-trim-right (match-string-no-properties 1))))))
 
 (defun phi-journal-read-tags (buffer)
   (let ((tags (phi--journal-get-field buffer 'tags)))
-    (phi-md-hashtags-str tags)))
+    (phi-md-hashtags-to-list tags)))
 
 (defun phi--yaml-section-wrap (s)
   "Wrap S as a YAML section. All but the last fields will have
@@ -408,7 +409,8 @@ the appropriate metadata : `:description', `:id', `:repository'."
       (if (and (re-search-forward
                 (concat "^#\\+"
                         (upcase (symbol-name field))
-                        ":\\s-*\\(.+\\)$") nil t))
+                        ":\\s-") nil t)
+               (looking-at "\\(.+\\)$"))
           (string-trim-right (match-string-no-properties 1))))))
 
 (defun phi-org-read-tags (buffer)
