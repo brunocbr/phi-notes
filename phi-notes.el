@@ -478,7 +478,7 @@ map from more to less specific types)."
                  (type-check-function . phi-basic-type-check-p)))
     (org-default . ((description . "Org file")
                     (file-extensions . ("org"))
-                    (extra-fields . (extra1 extra2))
+                    (extra-fields . nil)
                     (required-tags . nil)
                     (header-function . phi-org-header)
                     (tag-reader-function . nil)
