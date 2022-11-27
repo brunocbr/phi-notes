@@ -351,12 +351,12 @@ is a plist with appropriate metadata: `:description', `:id',
   (let ((type-props (alist-get type phi-note-types)))
     (alist-get prop type-props)))
 
-(defun phi-basic-type-verification-p (buffer type)
-  "Return `t' if the BUFFER conforms to basic verification for note
-of type TYPE. The conditions tested are the buffer file name
-having valid extension and the note having all required tags; or
-having the appropriate file extension and all type-specific
-extra-fields."
+(defun phi-basic-type-check-p (buffer type)
+  "Return `t' if the BUFFER conforms to basic verification checks
+for a note of type TYPE. The conditions tested are the buffer file
+name having valid extension and the note having all required
+tags; or having the appropriate file extension and all
+type-specific extra-fields."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
          (file-ext (file-name-extension (buffer-file-name buffer)))
@@ -377,9 +377,10 @@ extra-fields."
           (t nil))))
 
 (defun phi-is-type-p (buffer type)
-  "Return `t' if BUFFER complies with the appropriate verification for type TYPE."
-  (let ((verification-fn (phi--type-prop 'type-verification-function type)))
-    (when (functionp verification-fn) (funcall verification-fn buffer type))))
+  "Return `t' if BUFFER complies with the appropriate verification
+checks for type TYPE."
+  (let ((check-fn (phi--type-prop 'type-check-function type)))
+    (when (functionp check-fn) (funcall check-fn buffer type))))
 
 (defun phi-guess-type (buffer)
   "Return a guess of the note type for BUFFER. The function will
@@ -408,7 +409,7 @@ map from more to less specific types)."
                 (tag-writer-function . nil)
                 (field-reader-function . phi-md-get-fields)
                 (insert-link-function . phi-md-insert-link)
-                (type-verification-function . phi-basic-type-verification-p)))
+                (type-check-function . phi-basic-type-check-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
                        (file-extensions . ("markdown"))
                        (extra-fields . (citekey loc))
@@ -418,7 +419,7 @@ map from more to less specific types)."
                        (tag-writer-function . nil)
                        (field-reader-function . phi-md-get-fields)
                        (insert-link-function . phi-md-insert-link)
-                       (type-verification-function . phi-basic-type-verification-p)))
+                       (type-check-function . phi-basic-type-check-p)))
     (tlg-text . ((description . "TLG Text")
                  (file-extensions . ("markdown"))
                  (extra-fields . (ref_tlg section line))
@@ -428,7 +429,7 @@ map from more to less specific types)."
                  (tag-writer-function . nil)
                  (field-reader-function . phi-md-get-fields)
                  (insert-link-function . phi-md-insert-link)
-                 (type-verification-function . phi-basic-type-verification-p)))
+                 (type-check-function . phi-basic-type-check-p)))
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
                 (extra-fields . nil)
@@ -438,7 +439,7 @@ map from more to less specific types)."
                 (tag-writer-function . nil)
                 (field-reader-function . nil) ;; TODO
                 (insert-link-function . phi-md-insert-link)
-                (type-verification-function . nil)))))
+                (type-check-function . nil)))))
 
 ;; TODO: experimenting...
 (defvar phi-new-repositories
