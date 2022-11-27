@@ -632,7 +632,7 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
 the note type. LINK is a plist."
   (let* ((type (phi-guess-type buf))
          (insert-link-fn (phi--type-prop 'insert-link-function type)))
-    (when functionp insert-link-fn
+    (when (functionp insert-link-fn)
           (funcall insert-link-fn buf link))))
 
 ;;;###autoload
@@ -1428,29 +1428,23 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     filename))
 
 (defun helm-ag-phi-insert-link-action (candidate)
-  (let ((filename (file-name-nondirectory (helm-phi--get-file-name candidate))))
-    (string-match (helm-phi--extract-id-from-cadidate-re) filename)
-    (let* ((id (match-string-no-properties 1 filename))
-           (wikilink (concat phi-link-left-bracket-symbol
-                             id phi-link-right-bracket-symbol)))
-      (with-current-buffer (current-buffer)
-        (insert wikilink)))))
+  (let* ((filename (helm-phi--get-file-name candidate))
+        (id (phi--get-note-id-from-file-name filename)))
+    (phi-insert-link (current-buffer) (list :id id))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
-  (let ((filename (file-name-nondirectory (helm-phi--get-file-name candidate))))
-  (string-match (helm-phi--extract-id-from-cadidate-re) filename)
-    (let* ((id (match-string-no-properties 1 filename))
-           (title (match-string-no-properties 2 filename)))
-      (phi-insert-link (current-buffer) (list :id id :description title)))))
+  (let ((filename (helm-phi--get-file-name candidate))
+        (id (phi--get-note-id-from-file-name filename))
+        (title (phi--get-note-title-from-file-name filename)))
+    (phi-insert-link (current-buffer) (list :id id :description title))))
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
   "helm action to insert multiple titles and links"
   (cl-loop for cand in (helm-marked-candidates)
         do
-        (let* ((filename (helm-phi--get-file-name candidate))
+        (let* ((filename (helm-phi--get-file-name cand))
                (id (phi--get-note-id-from-file-name filename))
                (title (phi--get-note-title-from-file-name filename)))
-          (debug filename id title)
           (phi-insert-link (current-buffer) (list :id id
                                                   :description title
                                                   :prepend "- "
