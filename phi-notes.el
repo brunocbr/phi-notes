@@ -387,6 +387,21 @@ the appropriate metadata : `:description', `:id', `:repository'."
      (when extras (apply #'concat extras))
      "\n")))
 
+(defun phi--org-get-field (buffer field)
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char (point-min) )
+      (if (and (re-search-forward
+                (concat "^#\\+"
+                        (upcase (symbol-name field))
+                        ":\\s-*") nil t)
+               (looking-at ".*$"))
+          (match-string-no-properties 0)))))
+
+(defun phi-org-read-tags (buffer)
+  (let ((orgtags (phi--org-get-field buffer 'filetags)))
+    (split-string orgtags ":" t)))
+
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
 (defun phi--type-prop (prop type)
@@ -481,7 +496,7 @@ map from more to less specific types)."
                     (extra-fields . nil)
                     (required-tags . nil)
                     (header-function . phi-org-header)
-                    (tag-reader-function . nil)
+                    (tag-reader-function . phi-org-read-tags)
                     (field-reader-function . nil)
                     (insert-link-function . phi-org-insert-link)
                     (type-check-function . phi-basic-type-check-p)))
