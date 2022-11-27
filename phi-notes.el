@@ -415,7 +415,7 @@ the appropriate metadata : `:description', `:id', `:repository'."
 
 (defun phi-org-read-tags (buffer)
   (let ((orgtags (phi--org-get-field buffer 'filetags)))
-    (split-string orgtags ":" t)))
+    (when orgtags (split-string orgtags ":" t))))
 
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
@@ -524,7 +524,7 @@ map from more to less specific types)."
                 (tag-writer-function . nil)
                 (field-reader-function . nil) ;; TODO
                 (insert-link-function . phi-md-insert-link)
-                (type-check-function . nil)))))
+                (type-check-function . phi-basic-type-check)))))
 
 ;; TODO: experimenting...
 (defvar phi-new-repositories
@@ -627,6 +627,14 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
 
 ;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
 
+(defun phi-insert-link (buf link)
+  "Insert a link in buffer BUF, using the appropriate format for
+the note type. LINK is a plist."
+  (let* ((type (phi-guess-type buf))
+         (insert-link-fn (phi--type-prop 'insert-link-function type)))
+    (when functionp insert-link-fn
+          (funcall insert-link-fn buf link))))
+
 ;;;###autoload
 (defun phi-create-descendant (&rest args)
   "Create a descendant note from the current buffer. Use `:with-buffer' override.
@@ -642,7 +650,6 @@ Keyword arguments may override `:repository', `:type',
          (type (phi-guess-type buf))
          (get-fields-fn (phi--type-prop 'field-reader-function type))
          (get-tags-fn (phi--type-prop 'tag-reader-function type))
-         (insert-link-fn (phi--type-prop 'insert-link-function type))
          (cur-fields (when (functionp get-fields-fn)
                        (funcall get-fields-fn buf)))
          (cur-tags (when (functionp get-tags-fn)
@@ -663,10 +670,9 @@ Keyword arguments may override `:repository', `:type',
          (link-pre (plist-get args :link-prepend))
          (link-post (plist-get args :link-append))
          (link-repo (phi-buffer-repository buf)))
-    (when (functionp insert-link-fn)
-      (funcall insert-link-fn buf (list :id new-id :description new-title
-                                        :prepend link-pre :append link-post
-                                        :repository link-repo)))
+    (phi-insert-link buf (list :id new-id :description new-title
+                               :prepend link-pre :append link-post
+                               :repository link-repo))
     new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1434,18 +1440,21 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (let ((filename (file-name-nondirectory (helm-phi--get-file-name candidate))))
   (string-match (helm-phi--extract-id-from-cadidate-re) filename)
     (let* ((id (match-string-no-properties 1 filename))
-           (title (match-string-no-properties 2 filename))
-           (wikilink (concat phi-link-left-bracket-symbol
-                             id phi-link-right-bracket-symbol)))
-      (with-current-buffer (current-buffer)
-        (insert (concat title " " wikilink))))))
+           (title (match-string-no-properties 2 filename)))
+      (phi-insert-link (current-buffer) (list :id id :description title)))))
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
   "helm action to insert multiple titles and links"
   (cl-loop for cand in (helm-marked-candidates)
         do
-        (with-current-buffer (current-buffer)
-          (insert "- ") (helm-phi-insert-title-and-link-action cand) (newline))))
+        (let* ((filename (helm-phi--get-file-name candidate))
+               (id (phi--get-note-id-from-file-name filename))
+               (title (phi--get-note-title-from-file-name filename)))
+          (debug filename id title)
+          (phi-insert-link (current-buffer) (list :id id
+                                                  :description title
+                                                  :prepend "- "
+                                                  :append (newline))))))
 
 (defun helm-phi-insert-and-assign-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
