@@ -327,8 +327,8 @@ the common fields."
 
 (defun phi-md-read-tags (buffer)
   "Read tags in the frontmatter of BUFFER. Return a list of tags."
-  (let ((hashtags (phi-get-note-field-contents "tags" buffer)))
-    (phi-md-hashtags-to-list hashtags)))
+  (let ((fields (phi-md-get-fields buffer)))
+    (plist-get fields 'tags)))
 
 (defun phi-md-get-fields (buffer)
   "Return an alist with keys and values for fields in the YAML
@@ -337,19 +337,26 @@ frontmatter of BUFFER."
     (goto-char (point-min))
     ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
     (if (looking-at-p "---")
-        (let ((target-pos (point))
+        (let ((_ (forward-line 1))
+              (target-pos (point))
               (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
+              (field-key-str nil)
               (fields nil))
-          (forward-line 1)
+
           ;; Return after search-forward moved point.
           (goto-char target-pos)
-          (if (not yaml-end-pos)
-              (error "YAML block end boundary not found")
+
+          (if yaml-end-pos
             ;; If YAML block is found, collect the fields
-            (while (search-forward-regexp "^\\([[:alnum:]+/_-]+\\):[ \t]*\\(.*\\)$" yaml-end-pos t)
-              (add-to-list 'fields (cons (intern (match-string-no-properties 1))
-                                         (string-trim-right (match-string-no-properties 2))) t)))
-          fields)
+              (progn
+                (while (search-forward-regexp "^\\([[:alnum:]]+\\):\\s-*" yaml-end-pos t)
+                  (setq field-key-str (match-string-no-properties 1))
+                  (add-to-list 'fields
+                               (cons (intern field-key-str)
+                                     (when (looking-at "\\(.*\\)$")
+                                       (string-trim-right (match-string-no-properties 1)))) t))
+                fields)
+            nil))
       nil)))
 
 (defun phi-md-insert-link (buffer link)
@@ -633,7 +640,23 @@ the note type. LINK is a plist."
   (let* ((type (phi-guess-type buf))
          (insert-link-fn (phi--type-prop 'insert-link-function type)))
     (when (functionp insert-link-fn)
-          (funcall insert-link-fn buf link))))
+      (funcall insert-link-fn buf link))))
+
+(defun phi-get-tags (buffer)
+  "Interface for getting tags for a buffer BUF which may contain
+any kind of note. Return a list."
+  (let* ((type (phi-guess-type buffer))
+         (get-tags-fn (phi--type-prop 'tag-reader-function type)))
+    (when (functionp get-tags-fn)
+      (funcall get-tags-fn buffer))))
+
+(defun phi-get-fields (buffer)
+  "Interface for getting fields for a buffer BUFFER which may contain
+any kind of note. Return an alist."
+  (let* ((type (phi-guess-type buffer))
+         (get-fields-fn (phi--type-prop 'field-reader-function type)))
+    (when (functionp get-fields-fn)
+      (funcall get-fields-fn buffer))))
 
 ;;;###autoload
 (defun phi-create-descendant (&rest args)
@@ -893,19 +916,22 @@ there's no match"
 (defun phi-get-note-field-contents (field &optional buffer)
   "Return the specified field contents for BUFFER. If BUFFER is
 `nil', work with the current buffer."
-  (let ((buf (or buffer
-                 (current-buffer))))
-    (with-current-buffer buf
-      (save-excursion
-        (goto-char (point-min))
-        (if (looking-at-p "---") (forward-line 1))
-        (let ((target-pos (point))
-              (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
-          (goto-char target-pos)
-          (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
-                    (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
-                    (looking-at (concat ".*$")))
-              (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))))
+  (let* ((buf (or buffer
+                 (current-buffer)))
+        (fields (phi-get-fields buf)))
+    (plist-get fields (intern field)))) ;; TODO: interim solution
+
+    ;; (with-current-buffer buf
+    ;;   (save-excursion
+    ;;     (goto-char (point-min))
+    ;;     (if (looking-at-p "---") (forward-line 1))
+    ;;     (let ((target-pos (point))
+    ;;           (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+    ;;       (goto-char target-pos)
+    ;;       (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
+    ;;                 (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
+    ;;                 (looking-at (concat ".*$")))
+    ;;           (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))))
 
 (defun phi--get-tags-from-note-as-str (id)
   "Get a string of the tags from a given note `ID'"
@@ -918,8 +944,12 @@ there's no match"
 (defun phi--get-metadata-from-file (file)
   (with-current-buffer (get-buffer-create "*PHI temp*")
     (insert-file-contents file nil nil nil t)
-    (let ((contents (list :tags (phi-get-note-field-contents phi-tags-field)
-                          :citekey (phi-get-note-field-contents phi-citekey-field))))
+    ;; TODO interim solution
+    (let* ((fields (phi-md-get-fields (current-buffer)))
+           (contents (list :tags (alist-get 'tags fields)
+                          ;; (phi-get-note-field-contents phi-tags-field)
+                          :citekey (alist-get 'citekey fields))))
+                          ;; (phi-get-note-field-contents phi-citekey-field))))
       contents)))
 
 (defun phi-has-tag (tag)
