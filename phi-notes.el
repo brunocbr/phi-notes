@@ -267,6 +267,20 @@ names conform to `phi-tag-regex'."
           (phi-md-hashtags-str tags)
           (or title (format-time-string "%A"))))
 
+(defun phi--journal-get-field (buffer field)
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char (point-min) )
+      (if (and (re-search-forward
+                (concat "^  "
+                        (capitalize (symbol-name field))
+                        ":\\s-*\\([[:alnum:]]+\\)\\s-*$") nil t))
+          (match-string-no-properties 1)))))
+
+(defun phi-journal-read-tags (buffer)
+  (let ((tags (phi--journal-get-field buffer 'tags)))
+    (phi-md-hashtags-str tags)))
+
 (defun phi--yaml-section-wrap (s)
   "Wrap S as a YAML section. All but the last fields will have
 double space appended to the end of the line. This is in order
@@ -505,7 +519,7 @@ map from more to less specific types)."
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-journal-header)
-                (tag-reader-function . nil)
+                (tag-reader-function . phi-journal-read-tags)
                 (tag-writer-function . nil)
                 (field-reader-function . nil) ;; TODO
                 (insert-link-function . phi-md-insert-link)
