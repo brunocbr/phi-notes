@@ -340,9 +340,11 @@ is a plist with appropriate metadata: `:description', `:id',
 `:repository'"
   (let* ((description (plist-get link :description))
          (target-id (plist-get link :id))
-         (repository (plist-get link :repository)))
+         (repository (plist-get link :repository))
+         (link-pre (or (plist-get link :prepend) ""))
+         (link-post (or (plist-get link :append) "")))
   (with-current-buffer buffer
-    (insert (format "%s [[%s]]" description target-id)))))
+    (insert (format "%s%s [[%s]]%s" link-pre description target-id link-post)))))
 
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
@@ -545,6 +547,9 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
 (defun phi-create-descendant (&rest args)
   "Create a descendant note from the current buffer. Use `:with-buffer' override.
 
+Use `:link-prepend' and `:link-append' to insert text around the
+link to the new note.
+
 Keyword arguments may override `:repository', `:type',
 `:parent-props', `:tags' and `:fields' for the new note."
   (interactive)
@@ -570,9 +575,12 @@ Keyword arguments may override `:repository', `:type',
                          :fields cur-fields))))
          (new-props (phi-note-props new-buf))
          (new-id (alist-get 'id new-props))
-         (new-title (alist-get 'title new-props)))
+         (new-title (alist-get 'title new-props))
+         (link-pre (plist-get args :link-prepend))
+         (link-post (plist-get args :link-append)))
     (when (functionp insert-link-fn)
-      (funcall insert-link-fn buf (list :id new-id :description new-title)))
+      (funcall insert-link-fn buf (list :id new-id :description new-title
+                                        :prepend link-pre :append link-post)))
     new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1204,33 +1212,26 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun bibtex-completion-create-phi-note (keys)
   "Create PHI bibliographical annotation note(s) for each entry in KEYS."
-  (phi--enforce-directory)
-  (cl-loop for key in keys
-           do
-           (let* ((entry (bibtex-completion-get-entry key))
-                  (is-org? (eql 'org-mode major-mode))
-                  (year (or (bibtex-completion-get-value "year" entry)
-                            (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
-                  (author (bibtex-completion-get-value "author" entry))
-                  (title (bibtex-completion-get-value "title" entry))
-                  (note-title (read-string "title: " (format "%s (%s) %s" author year title)))
-                  (current-id (phi-get-current-note-id))
-                  (tags (read-string "tags: " (concat (when current-id
-                                                        (concat (phi--get-tags-from-note-as-str current-id) " "))
-                                                      phi-hashtag-symbol phi-annotation-tag)))
-                  (loc (read-string "loc: " "0"))
-                  (id (phi-inc-counter))
-                  (buffer (phi-create-common-note :id id :title note-title :tags tags :citekey key :loc loc
-                                                  :parent current-id))
-                  (new-file (buffer-file-name buffer)))
-             (if is-org?
-                 (phi-bibtex-org-insert-bib-action (list key))
-               (if current-id
-                   (progn
-                     (insert "- ")
-                     (helm-phi-insert-title-and-link-action new-file)
-                     (newline))))
-             (phi--pop-to-buffer-maybe buffer))))
+  ;; (phi--enforce-directory)
+  (let ((cur-buffer (current-buffer)))
+    (cl-loop for key in keys
+             do
+             (let* ((entry (bibtex-completion-get-entry key))
+                    (is-org? (eql 'org-mode major-mode))
+                    (year (or (bibtex-completion-get-value "year" entry)
+                              (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
+                    (author (bibtex-completion-get-value "author" entry))
+                    (title (bibtex-completion-get-value "title" entry))
+                    (note-title (format "%s (%s) %s" author year title))
+                    (fields (list (cons 'citekey key) (cons 'loc "0"))))
+               (with-current-buffer cur-buffer
+                 (phi-create-descendant :title note-title
+                                        :fields fields
+                                        :type 'bib-annotation
+                                        :link-prepend "- "
+                                        :link-append (newline))
+                 (if is-org?  ;; TODO
+                     (phi-bibtex-org-insert-bib-action (list key))))))))
 
 ;; phi-cached ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
