@@ -492,20 +492,19 @@ with some contents."
     (cadr (assoc-string choice selection))))
 
 (defun phi-new-note (&rest args)
-  "Create a new note. If the optional keyword argument `:type' is
- `nil', the user will be prompted.
+  "Create a new note.
+
+The note type is to be supplied with the `:type' keyword. If it
+is `nil', the user will be prompted for a note type.
 
 By default the user will be prompted for a note repository,
-unless `:repository' is used with repository name. Use 'current
+unless `:repository' is used with a repository name. Use 'current
 to create the new note in the same repository as the current
 buffer, without asking (except if the the current buffer file is
 not in a valid repository path).
 
 Other keyword arguments will be passed to the more specific
 functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
-
-  ;; A function to create descendant notes should call this one with
-  ;; the apropriate keyword args
   (interactive)
   (let* ((repository-arg (plist-get args :repository))
          (def-repository (phi-repository-for-path
@@ -544,11 +543,13 @@ Keyword arguments may override `:repository', `:type',
          ;; (extra-fields (seq-filter #'(lambda (x) (not (memq (car x) '(title id tags)))) cur-fields))
          (cur-props (phi-note-props buf))
          (new-buf
-          (phi-new-note :repository 'current
-                        :type type
-                        :parent-props cur-props
-                        :tags cur-tags
-                        :fields cur-fields)) ;; TODO: args should override
+          (apply #'phi-new-note
+           (append args
+                   (list :repository 'current
+                         :type type
+                         :parent-props cur-props
+                         :tags cur-tags
+                         :fields cur-fields))))
          (new-props (phi-note-props new-buf))
          (new-id (alist-get 'id new-props))
          (new-title (alist-get 'title new-props)))
