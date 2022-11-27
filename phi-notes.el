@@ -314,6 +314,26 @@ the common fields."
   (let ((hashtags (phi-get-note-field-contents "tags" buffer)))
     (phi-md-hashtags-to-list hashtags)))
 
+(defun phi-md-get-fields (buffer)
+  "Return an alist with keys and values for fields in the YAML
+frontmatter of BUFFER."
+  (save-excursion
+    (goto-char (point-min))
+    ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
+    (if (looking-at-p "---") (forward-line 1) (error "No YAML frontmatter found"))
+    (let ((target-pos (point))
+          (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
+          (fields nil))
+      ;; Return after search-forward moved point.
+      (goto-char target-pos)
+      (if (not yaml-end-pos)
+          (error "YAML block end boundary not found")
+        ;; If YAML block is found, collect the fields
+        (while (search-forward-regexp "^\\([[:alnum:]+/_-]+\\):[ \t]*\\(.*\\)$" yaml-end-pos t)
+          (add-to-list 'fields (cons (intern (match-string-no-properties 1))
+                                     (string-trim-right (match-string-no-properties 2))) t)))
+      fields)))
+
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
 (defun phi--type-prop (prop type)
@@ -323,16 +343,27 @@ the common fields."
 
 (defun phi-basic-type-verification-p (buffer type)
   "Return `t' if the BUFFER conforms to basic verification for note
-of type TYPE. The conditions tested are the buffer file name having valid
-extension and the note having all required tags."
+of type TYPE. The conditions tested are the buffer file name
+having valid extension and the note having all required tags; or
+having the appropriate file extension and all type-specific
+extra-fields."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
          (file-ext (file-name-extension (buffer-file-name buffer)))
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
-         (tags (when (functionp read-tags-fn) (funcall read-tags-fn buffer))))
+         (tags (when (functionp read-tags-fn)
+                 (funcall read-tags-fn buffer)))
+         (get-fields-fn (alist-get 'field-reader-function
+                                    type-props))
+         (fields (when (functionp get-fields-fn)
+                   (mapcar #'car
+                             (funcall get-fields-fn buffer))))
+         (type-fields (alist-get 'extra-fields type-props)))
     (cond ((and (member file-ext type-exts)
                 (every #'(lambda (x) (member x tags)) req-tags)) t)
+          ((and (member file-ext type-exts)
+                (every #'(lambda (x) (memq x fields)) type-fields)) t)
           (t nil))))
 
 (defun phi-is-type-p (buffer type)
@@ -346,7 +377,16 @@ check the note types alist in reverse order (assuming this should
 map from more to less specific types)."
   (let ((type-list (mapcar #'car (reverse phi-note-types))))
     (cl-loop for type in type-list
-             thereis (when (phi-is-type-p buffer type) type))))
+             thereis (when (phi-is-type-p buffer type)
+                       type))))
+
+(defun phi-note-props (buffer)
+  "Return alist of basic note properties for BUFFER."
+  (let* ((fn (buffer-file-name buffer))
+         (id (phi--get-note-id-from-file-name fn))
+         (title (phi--get-note-title-from-file-name fn)))
+    (list (cons 'id id)
+          (cons 'title title))))
 
 (defvar phi-note-types
   '((default . ((description . "Default")
@@ -356,6 +396,7 @@ map from more to less specific types)."
                 (header-function . phi-md-header)
                 (tag-reader-function . phi-md-read-tags)
                 (tag-writer-function . nil)
+                (field-reader-function . phi-md-get-fields)
                 (type-verification-function . phi-basic-type-verification-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
                        (file-extensions . ("markdown"))
@@ -364,6 +405,7 @@ map from more to less specific types)."
                        (header-function . phi-md-header)
                        (tag-reader-function . phi-md-read-tags)
                        (tag-writer-function . nil)
+                       (field-reader-function . phi-md-get-fields)
                        (type-verification-function . phi-basic-type-verification-p)))
     (tlg-text . ((description . "TLG Text")
                  (file-extensions . ("markdown"))
@@ -372,6 +414,7 @@ map from more to less specific types)."
                  (required-tags . ("π"))
                  (tag-reader-function . phi-md-read-tags)
                  (tag-writer-function . nil)
+                 (field-reader-function . phi-md-get-fields)
                  (type-verification-function . phi-basic-type-verification-p)))
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
@@ -380,6 +423,7 @@ map from more to less specific types)."
                 (header-function . phi-journal-header)
                 (tag-reader-function . nil)
                 (tag-writer-function . nil)
+                (field-reader-function . nil) ;; TODO
                 (type-verification-function . nil)))))
 
 ;; TODO: experimenting...
@@ -402,7 +446,7 @@ Optional keyword arguments `:title', `:tags', `:fields' may be
 passed to supply default information; `:parent-props' to pass an
 alist of properties/fields of the parent note. This will all be
 consumed by a call to the associated `header-function' registered
-in REPOSITORY-PROPS, in order to build the header for the note.
+in `phi-note-types', in order to build the header for the note.
 
 Use the optional keyword `:body' with a string to fill the note
 with some contents."
@@ -426,15 +470,17 @@ with some contents."
                                         #'string=)))
          (body (plist-get args :body))
          (id (phi-inc-counter repo-dir))
+         (filename (concat repo-dir "/" id
+                           (when (not (string= title "")) (concat " " title)) "." file-extension))
          (header (funcall header-fn id title tags parent-props
-                          fields)))
-    (with-current-buffer (generate-new-buffer "*New PHI Note*")
+                          fields))
+         (new-buf (generate-new-buffer "*New PHI Note*")))
+    (with-current-buffer new-buf
       (insert header)
       (when body (insert body))
-      (write-file (concat repo-dir "/" id
-                          (when (not (string= title "")) (concat " " title)) "." file-extension))
-      (phi-mode)
-      (current-buffer))))
+      (write-file filename)
+      (phi-mode))
+    new-buf))
 
 (defun phi-prompt-for-type ()
   "Prompt user to select a note type from its description, and return the type."
@@ -470,11 +516,42 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
          (type (or (plist-get args :type)
                    (phi-prompt-for-type)))
          (buf (apply #'phi-new-create-note type repo-dir args)))
-    (phi--pop-to-buffer-maybe buf))) ;; FIXME C-u not working
+    (phi--pop-to-buffer-maybe buf)
+    buf)) ;; FIXME C-u not working
 
 ;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
 
+(defun phi-new-create-descendant (&rest args)
+  "Create a descendant note from the current buffer. Use `:with-buffer' override.
 
+Keyword arguments may override `:repository', `:type',
+`:parent-props', `:tags' and `:fields'"
+  (interactive)
+  (let* ((buf (or (plist-get args :with-buffer)
+                  (current-buffer)))
+         (type (phi-guess-type buf))
+         (repo-dir (file-name-directory (buffer-file-name buf))) ;; TODO: not elegant?
+         (repository (phi-repository-for-path repo-dir))
+         (get-fields-fn (phi--type-prop 'field-reader-function type))
+         (get-tags-fn (phi--type-prop 'tag-reader-function type))
+         (cur-fields (when (functionp get-fields-fn)
+                       (funcall get-fields-fn buf)))
+         (cur-tags (when (functionp get-tags-fn)
+                     (funcall get-tags-fn buf)))
+         ;; (extra-fields (seq-filter #'(lambda (x) (not (memq (car x) '(title id tags)))) cur-fields))
+         (cur-props (phi-note-props buf))
+         (new-buf
+          (phi-new-note :repository repository
+                        :type type
+                        :parent-props cur-props
+                        :tags cur-tags
+                        :fields cur-fields))
+         (new-props (phi-note-props new-buf))
+         (new-id (alist-get 'id new-props))
+         (new-title (alist-get 'title new-props)))
+    (with-current-buffer buf
+      (insert (format "%s [[%s]]" new-title new-id)))
+    new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,20 +641,23 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
 
 (defun phi--get-note-id-from-file-name (filename)
-  (when (string-match (concat "^" phi-id-regex) filename)
-    (match-string 0 filename)))
+  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+    (when (string-match (concat "^" phi-id-regex) fn)
+      (match-string 0 fn))))
+
+(defun phi--get-note-title-from-file-name (filename)
+  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+    (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") fn)
+        (match-string-no-properties 2 fn))))
 
 (defun phi-get-current-note-id ()
   "Get the current note id"
   (interactive)
-  (let ((filename (file-name-nondirectory buffer-file-name)))
-    (phi--get-note-id-from-file-name filename)))
+  (phi--get-note-id-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-title ()
   "Get current note title from its filename"
-  (let ((filename (file-name-sans-extension (file-name-nondirectory buffer-file-name))))
-    (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") filename)
-        (match-string-no-properties 2 filename))))
+  (phi--get-note-title-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-tlg-fields ()
   "Get the TLG fields for the current note in as plist"
