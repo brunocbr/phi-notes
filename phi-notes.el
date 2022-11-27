@@ -540,7 +540,7 @@ functions: `:title', `:tags', `:fields', `:body', `:parent-props'."
 
 ;; (phi-new-new-note :repository "Diário" :tags '(teste) :type 'journal :body "that's my body")
 
-(defun phi-new-create-descendant (&rest args)
+(defun phi-create-descendant (&rest args)
   "Create a descendant note from the current buffer. Use `:with-buffer' override.
 
 Keyword arguments may override `:repository', `:type',
@@ -1592,7 +1592,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c ;") #'phi-toggle-sidebar)
     (define-key map (kbd "C-c :") #'phi-focus-sidebar)
-    (define-key map (kbd "C-c n d") #'phi-new-descendant-note)
+    (define-key map (kbd "C-c n d") #'phi-create-descendant)
     (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
     (define-key map (kbd "C-c u") #'phi-visit-parent-note)
