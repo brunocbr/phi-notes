@@ -274,8 +274,8 @@ names conform to `phi-tag-regex'."
       (if (and (re-search-forward
                 (concat "^  "
                         (capitalize (symbol-name field))
-                        ":\\s-*\\([[:alnum:]]+\\)\\s-*$") nil t))
-          (match-string-no-properties 1)))))
+                        ":\\s-*\\(.+\\)$") nil t))
+          (string-trim-right (match-string-no-properties 1))))))
 
 (defun phi-journal-read-tags (buffer)
   (let ((tags (phi--journal-get-field buffer 'tags)))
@@ -408,9 +408,8 @@ the appropriate metadata : `:description', `:id', `:repository'."
       (if (and (re-search-forward
                 (concat "^#\\+"
                         (upcase (symbol-name field))
-                        ":\\s-*") nil t)
-               (looking-at ".*$"))
-          (match-string-no-properties 0)))))
+                        ":\\s-*\\(.+\\)$") nil t))
+          (string-trim-right (match-string-no-properties 1))))))
 
 (defun phi-org-read-tags (buffer)
   (let ((orgtags (phi--org-get-field buffer 'filetags)))
