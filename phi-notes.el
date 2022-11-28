@@ -442,7 +442,10 @@ the appropriate metadata : `:description', `:id', `:repository'."
 for a note of type TYPE. The conditions tested are the buffer file
 name having valid extension and the note having all required
 tags; or having the appropriate file extension and all
-type-specific extra-fields."
+type-specific extra-fields.
+
+The extension may be supplied with `:extension', notably when
+working with temporary buffers with no corresponding files."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
          (file-ext (or (plist-get (flatten-list args) :extension)
