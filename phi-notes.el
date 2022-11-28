@@ -267,20 +267,6 @@ names conform to `phi-tag-regex'."
           (phi-md-hashtags-str tags)
           (or title (format-time-string "%A"))))
 
-(defun phi--journal-get-field (buffer field)
-  (with-current-buffer buffer
-    (save-excursion
-      (goto-char (point-min))
-      (let* ((_ (forward-line 6)) ;; limit the seek to the first lines
-             (end-pos (point)))
-        (goto-char (point-min))
-        (if (and (re-search-forward
-                  (concat "^  "
-                          (capitalize (symbol-name field))
-                          ":\\s-") end-pos t)
-                 (looking-at "\\(.+\\)$"))
-            (string-trim-right (match-string-no-properties 1)))))))
-
 (defun phi-journal-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
