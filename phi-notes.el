@@ -489,7 +489,7 @@ map from more to less specific types)."
 
 (defvar phi-note-types
   '((default . ((description . "Default")
-                (file-extensions . ("markdown"))
+                (file-extensions . ("markdown" "md"))
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-md-header)
@@ -499,7 +499,7 @@ map from more to less specific types)."
                 (insert-link-function . phi-md-insert-link)
                 (type-check-function . phi-basic-type-check-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
-                       (file-extensions . ("markdown"))
+                       (file-extensions . ("markdown" "md"))
                        (extra-fields . (citekey loc))
                        (required-tags . ("ƒ"))
                        (header-function . phi-md-header)
@@ -650,7 +650,8 @@ the note type. LINK is a plist."
 (defun phi-get-tags (buffer &rest args)
   "Interface for getting tags for a buffer BUF which may contain
 any kind of note. Return a list."
-  (let* ((type (phi-guess-type buffer args))
+  (let* ((type (or (plist-get args :type)
+                   (phi-guess-type buffer args)))
          (get-tags-fn (phi--type-prop 'tag-reader-function type)))
     (when (functionp get-tags-fn)
       (funcall get-tags-fn buffer))))
@@ -658,7 +659,8 @@ any kind of note. Return a list."
 (defun phi-get-fields (buffer &rest args)
   "Interface for getting fields for a buffer BUFFER which may contain
 any kind of note. Return an alist."
-  (let* ((type (phi-guess-type buffer args))
+  (let* ((type (or (plist-get args :type)
+                   (phi-guess-type buffer args)))
          (get-fields-fn (phi--type-prop 'field-reader-function type)))
     (when (functionp get-fields-fn)
       (funcall get-fields-fn buffer))))
@@ -951,9 +953,15 @@ there's no match"
     (insert-file-contents file nil nil nil t)
     ;; TODO interim solution 2
     (let* ((file-ext (file-name-extension file))
-           (fields (phi-get-fields (current-buffer)
-                                   :extension file-ext))
-           (contents (list :tags (alist-get 'tags fields)
+           (type (phi-guess-type (current-buffer)
+                                 :extension file-ext))
+           (fields (and type
+                        (phi-get-fields (current-buffer)
+                                        :type type)))
+           (tags (and type
+                      (phi-get-tags (current-buffer)
+                                    :type type)))
+           (contents (list :tags (phi-md-hashtags-str tags)
                           ;; (phi-get-note-field-contents phi-tags-field)
                           :citekey (alist-get 'citekey fields))))
                           ;; (phi-get-note-field-contents phi-citekey-field))))
