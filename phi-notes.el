@@ -961,7 +961,7 @@ there's no match"
            (tags (and type
                       (phi-get-tags (current-buffer)
                                     :type type)))
-           (contents (list :tags (phi-md-hashtags-str tags)
+           (contents (list :tags (phi-md-hashtags-str (sort tags 'string<))
                           ;; (phi-get-note-field-contents phi-tags-field)
                           :citekey (alist-get 'citekey fields))))
                           ;; (phi-get-note-field-contents phi-citekey-field))))
