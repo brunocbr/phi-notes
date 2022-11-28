@@ -270,9 +270,11 @@ names conform to `phi-tag-regex'."
 (defun phi-journal-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
-    (let ((fields nil)
+    (let ((_ (save-excursion (forward-line 6)))
+          (endpos (point)) ;; limit the seek to the first lines
+          (fields nil)
           (field-key-str nil))
-      (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" nil t)
+      (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
                      (cons (intern (downcase field-key-str))
@@ -407,23 +409,14 @@ the appropriate metadata : `:description', `:id', `:repository'."
      (when extras (apply #'concat extras))
      "\n")))
 
-(defun phi--org-get-field (buffer field)
-  (with-current-buffer buffer
-    (save-excursion
-      (goto-char (point-min) )
-      (if (and (re-search-forward
-                (concat "^#\\+"
-                        (upcase (symbol-name field))
-                        ":\\s-") nil t)
-               (looking-at "\\(.+\\)$"))
-          (string-trim-right (match-string-no-properties 1))))))
-
 (defun phi-org-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
-    (let ((fields nil)
+    (let ((_ (save-excursion (forward-line 12)))
+          (endpos (point))
+          (fields nil)
           (field-key-str nil))
-      (while (search-forward-regexp "#\\+\\([[:alnum:]]+\\):\\s-*" nil t)
+      (while (search-forward-regexp "#\\+\\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
                      (cons (intern (downcase field-key-str))
