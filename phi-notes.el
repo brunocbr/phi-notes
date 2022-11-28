@@ -270,16 +270,32 @@ names conform to `phi-tag-regex'."
 (defun phi--journal-get-field (buffer field)
   (with-current-buffer buffer
     (save-excursion
-      (goto-char (point-min) )
-      (if (and (re-search-forward
-                (concat "^  "
-                        (capitalize (symbol-name field))
-                        ":\\s-") nil t)
-               (looking-at "\\(.+\\)$"))
-          (string-trim-right (match-string-no-properties 1))))))
+      (goto-char (point-min))
+      (let* ((_ (forward-line 6)) ;; limit the seek to the first lines
+             (end-pos (point)))
+        (goto-char (point-min))
+        (if (and (re-search-forward
+                  (concat "^  "
+                          (capitalize (symbol-name field))
+                          ":\\s-") end-pos t)
+                 (looking-at "\\(.+\\)$"))
+            (string-trim-right (match-string-no-properties 1)))))))
+
+(defun phi-journal-get-fields-1 (buffer)
+  (mapcar #'(lambda (x) (cons x (phi--journal-get-field buffer x))) '(date tags)))
 
 (defun phi-journal-get-fields (buffer)
-  (mapcar #'(lambda (x) (cons x (phi--journal-get-field buffer x))) '(date tags)))
+  (save-excursion
+    (goto-char (point-min))
+    (let ((fields nil)
+          (field-key-str nil))
+      (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" nil t)
+        (setq field-key-str (match-string-no-properties 1))
+        (add-to-list 'fields
+                     (cons (intern (downcase field-key-str))
+                           (when (looking-at "\\(.*\\)$")
+                             (string-trim-right (match-string-no-properties 1))))))
+      fields)))
 
 (defun phi-journal-read-tags (buffer)
   (let ((tags (phi--journal-get-field buffer 'tags)))
@@ -340,7 +356,7 @@ frontmatter of BUFFER."
     (goto-char (point-min))
     ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
     (if (looking-at-p "---")
-        (let ((_ (forward-line 1))
+        (let* ((_ (forward-line 1))
               (target-pos (point))
               (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
               (field-key-str nil)
@@ -584,7 +600,8 @@ with some contents."
          (body (plist-get args :body))
          (id (phi-inc-counter repo-dir))
          (filename (concat repo-dir "/" id
-                           (when (not (string= title "")) (concat " " title)) "." file-extension))
+                           (when (not (string= title ""))
+                             (concat " " title)) "." file-extension))
          (header (funcall header-fn id title tags parent-props
                           fields))
          (new-buf (generate-new-buffer "*New PHI Note*")))
