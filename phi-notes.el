@@ -439,6 +439,20 @@ the appropriate metadata : `:description', `:id', `:repository'."
                (looking-at "\\(.+\\)$"))
           (string-trim-right (match-string-no-properties 1))))))
 
+(defun phi-org-get-fields (buffer)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((fields nil)
+          (field-key-str nil))
+      (while (search-forward-regexp "#\\+\\([[:alnum:]]+\\):\\s-*" nil t)
+        (setq field-key-str (match-string-no-properties 1))
+        (add-to-list 'fields
+                     (cons (intern (downcase field-key-str))
+                           (when (looking-at "\\(.*\\)$")
+                             (string-trim-right (match-string-no-properties 1))))))
+      fields)))
+
+
 (defun phi-org-read-tags (buffer)
   (let ((orgtags (phi--org-get-field buffer 'filetags)))
     (when orgtags (split-string orgtags ":" t))))
@@ -540,7 +554,7 @@ map from more to less specific types)."
                     (required-tags . nil)
                     (header-function . phi-org-header)
                     (tag-reader-function . phi-org-read-tags)
-                    (field-reader-function . nil)
+                    (field-reader-function . phi-org-get-fields)
                     (insert-link-function . phi-org-insert-link)
                     (type-check-function . phi-basic-type-check-p)))
     (journal . ((description . "Journal entry")
