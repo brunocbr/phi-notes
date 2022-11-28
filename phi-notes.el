@@ -281,9 +281,6 @@ names conform to `phi-tag-regex'."
                  (looking-at "\\(.+\\)$"))
             (string-trim-right (match-string-no-properties 1)))))))
 
-(defun phi-journal-get-fields-1 (buffer)
-  (mapcar #'(lambda (x) (cons x (phi--journal-get-field buffer x))) '(date tags)))
-
 (defun phi-journal-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
@@ -296,10 +293,6 @@ names conform to `phi-tag-regex'."
                            (when (looking-at "\\(.*\\)$")
                              (string-trim-right (match-string-no-properties 1))))))
       fields)))
-
-(defun phi-journal-read-tags (buffer)
-  (let ((tags (phi--journal-get-field buffer 'tags)))
-    (phi-md-hashtags-to-list tags)))
 
 (defun phi--yaml-section-wrap (s)
   "Wrap S as a YAML section. All but the last fields will have
@@ -344,10 +337,10 @@ the common fields."
                                "\n"))))
     (concat frontmatter breadcrumb "\n")))
 
-(defun phi-md-read-tags (buffer)
-  "Read tags in the frontmatter of BUFFER. Return a list of tags."
-  (let ((fields (phi-md-get-fields buffer)))
-    (phi-md-hashtags-to-list (alist-get 'tags fields))))
+(defun phi-md-tag-reader (fields)
+  "Read the tag field from FIELDS, expecting a string with
+hashtags, and return a list of tags."
+  (phi-md-hashtags-to-list (alist-get 'tags fields)))
 
 (defun phi-md-get-fields (buffer)
   "Return an alist with keys and values for fields in the YAML
@@ -452,9 +445,8 @@ the appropriate metadata : `:description', `:id', `:repository'."
                              (string-trim-right (match-string-no-properties 1))))))
       fields)))
 
-
-(defun phi-org-read-tags (buffer)
-  (let ((orgtags (phi--org-get-field buffer 'filetags)))
+(defun phi-org-tag-reader (fields)
+  (let ((orgtags (alist-get 'filetags fields)))
     (when orgtags (split-string orgtags ":" t))))
 
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
@@ -476,19 +468,19 @@ type-specific extra-fields."
                        (file-name-extension (buffer-file-name buffer))))
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
-         (tags (when (functionp read-tags-fn)
-                 (funcall read-tags-fn buffer)))
-         (get-fields-fn (alist-get 'field-reader-function
+         (get-fields-fn (alist-get 'get-fields-function
                                     type-props))
          (fields (when (functionp get-fields-fn)
-                   (mapcar #'car
-                             (funcall get-fields-fn buffer))))
+                   (funcall get-fields-fn buffer)))
+         (field-keys (mapcar #'car fields))
+         (tags (when (functionp read-tags-fn)
+                 (funcall read-tags-fn fields)))
          (type-fields (alist-get 'extra-fields type-props)))
     (cond ((and (member file-ext type-exts)
                 (every #'(lambda (x) (member x tags)) req-tags)) t)
           ((and type-fields
                 (member file-ext type-exts)
-                (every #'(lambda (x) (memq x fields)) type-fields)) t)
+                (every #'(lambda (x) (memq x field-keys)) type-fields)) t)
           ((and (null tags)
                 (null req-tags)
                 (member file-ext type-exts)) t)
@@ -523,9 +515,9 @@ map from more to less specific types)."
                 (extra-fields . nil)
                 (required-tags . nil)
                 (header-function . phi-md-header)
-                (tag-reader-function . phi-md-read-tags)
+                (tag-reader-function . phi-md-tag-reader)
                 (tag-writer-function . nil)
-                (field-reader-function . phi-md-get-fields)
+                (get-fields-function . phi-md-get-fields)
                 (insert-link-function . phi-md-insert-link)
                 (type-check-function . phi-basic-type-check-p)))
     (bib-annotation . ((description . "Bibliographical annotation")
@@ -533,9 +525,9 @@ map from more to less specific types)."
                        (extra-fields . (citekey loc))
                        (required-tags . ("ƒ"))
                        (header-function . phi-md-header)
-                       (tag-reader-function . phi-md-read-tags)
+                       (tag-reader-function . phi-md-tag-reader)
                        (tag-writer-function . nil)
-                       (field-reader-function . phi-md-get-fields)
+                       (get-fields-function . phi-md-get-fields)
                        (insert-link-function . phi-md-insert-link)
                        (type-check-function . phi-basic-type-check-p)))
     (tlg-text . ((description . "TLG Text")
@@ -543,9 +535,9 @@ map from more to less specific types)."
                  (extra-fields . (ref_tlg section line))
                  (header-function . phi-md-header)
                  (required-tags . ("π"))
-                 (tag-reader-function . phi-md-read-tags)
+                 (tag-reader-function . phi-md-tag-reader)
                  (tag-writer-function . nil)
-                 (field-reader-function . phi-md-get-fields)
+                 (get-fields-function . phi-md-get-fields)
                  (insert-link-function . phi-md-insert-link)
                  (type-check-function . phi-basic-type-check-p)))
     (org-default . ((description . "Org file")
@@ -553,8 +545,8 @@ map from more to less specific types)."
                     (extra-fields . nil)
                     (required-tags . nil)
                     (header-function . phi-org-header)
-                    (tag-reader-function . phi-org-read-tags)
-                    (field-reader-function . phi-org-get-fields)
+                    (tag-reader-function . phi-org-tag-reader)
+                    (get-fields-function . phi-org-get-fields)
                     (insert-link-function . phi-org-insert-link)
                     (type-check-function . phi-basic-type-check-p)))
     (journal . ((description . "Journal entry")
@@ -562,9 +554,9 @@ map from more to less specific types)."
                 (extra-fields . nil)
                 (required-tags . ("diário"))
                 (header-function . phi-journal-header)
-                (tag-reader-function . phi-journal-read-tags)
+                (tag-reader-function . phi-md-tag-reader)
                 (tag-writer-function . nil)
-                (field-reader-function . phi-journal-get-fields)
+                (get-fields-function . phi-journal-get-fields)
                 (insert-link-function . phi-md-insert-link)
                 (type-check-function . phi-basic-type-check-p)))))
 
@@ -680,19 +672,25 @@ the note type. LINK is a plist."
 
 (defun phi-get-tags (buffer &rest args)
   "Interface for getting tags for a buffer BUF which may contain
-any kind of note. Return a list."
+any kind of note. Return a list. Use `:type' to override
+expensive type checks and `:fields' to avoid reading fields from
+the buffer."
   (let* ((type (or (plist-get args :type)
                    (phi-guess-type buffer args)))
-         (get-tags-fn (phi--type-prop 'tag-reader-function type)))
-    (when (functionp get-tags-fn)
-      (funcall get-tags-fn buffer))))
+         (read-tags-fn (phi--type-prop 'tag-reader-function type))
+         (get-fields-fn (phi--type-prop 'get-fields-function type)))
+    (when (functionp read-tags-fn)
+      (funcall read-tags-fn (or (plist-get args :fields)
+                              (when (functionp get-fields-fn)
+                                (funcall get-fields-fn
+                                         buffer)))))))
 
 (defun phi-get-fields (buffer &rest args)
   "Interface for getting fields for a buffer BUFFER which may contain
 any kind of note. Return an alist."
   (let* ((type (or (plist-get args :type)
                    (phi-guess-type buffer args)))
-         (get-fields-fn (phi--type-prop 'field-reader-function type)))
+         (get-fields-fn (phi--type-prop 'get-fields-function type)))
     (when (functionp get-fields-fn)
       (funcall get-fields-fn buffer))))
 
@@ -709,12 +707,12 @@ Keyword arguments may override `:repository', `:type',
   (let* ((buf (or (plist-get args :with-buffer)
                   (current-buffer)))
          (type (phi-guess-type buf))
-         (get-fields-fn (phi--type-prop 'field-reader-function type))
-         (get-tags-fn (phi--type-prop 'tag-reader-function type))
+         (get-fields-fn (phi--type-prop 'get-fields-function type))
+         (read-tags-fn (phi--type-prop 'tag-reader-function type))
          (cur-fields (when (functionp get-fields-fn)
                        (funcall get-fields-fn buf)))
-         (cur-tags (when (functionp get-tags-fn)
-                     (funcall get-tags-fn buf)))
+         (cur-tags (when (functionp read-tags-fn)
+                     (funcall read-tags-fn cur-fields)))
          ;; (extra-fields (seq-filter #'(lambda (x) (not (memq (car x) '(title id tags)))) cur-fields))
          (cur-props (phi-note-props buf))
          (new-buf
@@ -991,7 +989,8 @@ there's no match"
                                         :type type)))
            (tags (and type
                       (phi-get-tags (current-buffer)
-                                    :type type)))
+                                    :type type
+                                    :fields fields)))
            (contents (list :tags (phi-md-hashtags-str (sort tags 'string<))
                           ;; (phi-get-note-field-contents phi-tags-field)
                           :citekey (alist-get 'citekey fields))))
