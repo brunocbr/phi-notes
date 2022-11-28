@@ -278,6 +278,9 @@ names conform to `phi-tag-regex'."
                (looking-at "\\(.+\\)$"))
           (string-trim-right (match-string-no-properties 1))))))
 
+(defun phi-journal-get-fields (buffer)
+  (mapcar #'(lambda (x) (cons x (phi--journal-get-field buffer x))) '(date tags)))
+
 (defun phi-journal-read-tags (buffer)
   (let ((tags (phi--journal-get-field buffer 'tags)))
     (phi-md-hashtags-to-list tags)))
@@ -328,7 +331,7 @@ the common fields."
 (defun phi-md-read-tags (buffer)
   "Read tags in the frontmatter of BUFFER. Return a list of tags."
   (let ((fields (phi-md-get-fields buffer)))
-    (plist-get fields 'tags)))
+    (phi-md-hashtags-to-list (alist-get 'tags fields))))
 
 (defun phi-md-get-fields (buffer)
   "Return an alist with keys and values for fields in the YAML
@@ -431,7 +434,7 @@ the appropriate metadata : `:description', `:id', `:repository'."
   (let ((type-props (alist-get type phi-note-types)))
     (alist-get prop type-props)))
 
-(defun phi-basic-type-check-p (buffer type)
+(defun phi-basic-type-check-p (buffer type &rest args)
   "Return `t' if the BUFFER conforms to basic verification checks
 for a note of type TYPE. The conditions tested are the buffer file
 name having valid extension and the note having all required
@@ -439,7 +442,8 @@ tags; or having the appropriate file extension and all
 type-specific extra-fields."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
-         (file-ext (file-name-extension (buffer-file-name buffer)))
+         (file-ext (or (plist-get (flatten-list args) :extension)
+                       (file-name-extension (buffer-file-name buffer))))
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
          (tags (when (functionp read-tags-fn)
@@ -452,26 +456,27 @@ type-specific extra-fields."
          (type-fields (alist-get 'extra-fields type-props)))
     (cond ((and (member file-ext type-exts)
                 (every #'(lambda (x) (member x tags)) req-tags)) t)
-          ((and (member file-ext type-exts)
+          ((and type-fields
+                (member file-ext type-exts)
                 (every #'(lambda (x) (memq x fields)) type-fields)) t)
           ((and (null tags)
                 (null req-tags)
                 (member file-ext type-exts)) t)
           (t nil))))
 
-(defun phi-is-type-p (buffer type)
+(defun phi-is-type-p (buffer type &rest args)
   "Return `t' if BUFFER complies with the appropriate verification
 checks for type TYPE."
   (let ((check-fn (phi--type-prop 'type-check-function type)))
-    (when (functionp check-fn) (funcall check-fn buffer type))))
+    (when (functionp check-fn) (apply check-fn buffer type args))))
 
-(defun phi-guess-type (buffer)
+(defun phi-guess-type (buffer &rest args)
   "Return a guess of the note type for BUFFER. The function will
 check the note types alist in reverse order (assuming this should
 map from more to less specific types)."
   (let ((type-list (mapcar #'car (reverse phi-note-types))))
     (cl-loop for type in type-list
-             thereis (when (phi-is-type-p buffer type)
+             thereis (when (apply #'phi-is-type-p buffer type args)
                        type))))
 
 (defun phi-note-props (buffer)
@@ -525,13 +530,13 @@ map from more to less specific types)."
     (journal . ((description . "Journal entry")
                 (file-extensions . ("markdown"))
                 (extra-fields . nil)
-                (required-tags . nil)
+                (required-tags . ("diário"))
                 (header-function . phi-journal-header)
                 (tag-reader-function . phi-journal-read-tags)
                 (tag-writer-function . nil)
-                (field-reader-function . nil) ;; TODO
+                (field-reader-function . phi-journal-get-fields)
                 (insert-link-function . phi-md-insert-link)
-                (type-check-function . phi-basic-type-check)))))
+                (type-check-function . phi-basic-type-check-p)))))
 
 ;; TODO: experimenting...
 (defvar phi-new-repositories
@@ -642,18 +647,18 @@ the note type. LINK is a plist."
     (when (functionp insert-link-fn)
       (funcall insert-link-fn buf link))))
 
-(defun phi-get-tags (buffer)
+(defun phi-get-tags (buffer &rest args)
   "Interface for getting tags for a buffer BUF which may contain
 any kind of note. Return a list."
-  (let* ((type (phi-guess-type buffer))
+  (let* ((type (phi-guess-type buffer args))
          (get-tags-fn (phi--type-prop 'tag-reader-function type)))
     (when (functionp get-tags-fn)
       (funcall get-tags-fn buffer))))
 
-(defun phi-get-fields (buffer)
+(defun phi-get-fields (buffer &rest args)
   "Interface for getting fields for a buffer BUFFER which may contain
 any kind of note. Return an alist."
-  (let* ((type (phi-guess-type buffer))
+  (let* ((type (phi-guess-type buffer args))
          (get-fields-fn (phi--type-prop 'field-reader-function type)))
     (when (functionp get-fields-fn)
       (funcall get-fields-fn buffer))))
@@ -944,13 +949,27 @@ there's no match"
 (defun phi--get-metadata-from-file (file)
   (with-current-buffer (get-buffer-create "*PHI temp*")
     (insert-file-contents file nil nil nil t)
-    ;; TODO interim solution
-    (let* ((fields (phi-md-get-fields (current-buffer)))
+    ;; TODO interim solution 2
+    (let* ((file-ext (file-name-extension file))
+           (fields (phi-get-fields (current-buffer)
+                                   :extension file-ext))
            (contents (list :tags (alist-get 'tags fields)
                           ;; (phi-get-note-field-contents phi-tags-field)
                           :citekey (alist-get 'citekey fields))))
                           ;; (phi-get-note-field-contents phi-citekey-field))))
       contents)))
+
+(defun phi--get-metadata-from-file-1 (file)
+  (with-current-buffer (get-buffer-create "*PHI temp*")
+    (insert-file-contents file nil nil nil t)
+    ;; TODO interim solution
+    (let* ((fields (phi-md-get-fields (current-buffer)))
+           (contents (list :tags (alist-get 'tags fields)
+                           ;; (phi-get-note-field-contents phi-tags-field)
+                           :citekey (alist-get 'citekey fields))))
+      ;; (phi-get-note-field-contents phi-citekey-field))))
+      contents)))
+
 
 (defun phi-has-tag (tag)
   (let ((tags (phi-get-note-field-contents phi-tags-field)))
