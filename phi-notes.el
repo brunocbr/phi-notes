@@ -270,10 +270,11 @@ names conform to `phi-tag-regex'."
 (defun phi-journal-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
-    (let ((_ (save-excursion (forward-line 6)))
-          (endpos (point)) ;; limit the seek to the first lines
-          (fields nil)
-          (field-key-str nil))
+    (let* ((endpos (save-excursion
+                     (forward-line 6)
+                     (point))) ;; limit the seek to the first lines
+           (fields nil)
+           (field-key-str nil))
       (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
@@ -412,8 +413,9 @@ the appropriate metadata : `:description', `:id', `:repository'."
 (defun phi-org-get-fields (buffer)
   (save-excursion
     (goto-char (point-min))
-    (let ((_ (save-excursion (forward-line 12)))
-          (endpos (point))
+    (let* ((endpos (save-excursion
+                     (forward-line 12)
+                     (point)))
           (fields nil)
           (field-key-str nil))
       (while (search-forward-regexp "#\\+\\([[:alnum:]]+\\):\\s-*" endpos t)
