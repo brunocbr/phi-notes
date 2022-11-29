@@ -487,14 +487,9 @@ working with temporary buffers with no corresponding files."
          (tags (when (functionp read-tags-fn)
                  (funcall read-tags-fn fields)))
          (type-fields (alist-get 'extra-fields type-props)))
-    (cond ((and (member file-ext type-exts)
-                (cl-every #'(lambda (x) (memq x field-keys)) type-fields)
-                (cl-every #'(lambda (x) (member x tags)) req-tags)) t)
-          ((and (null tags)
-                (null req-tags)
-                (null type-fields)
-                (member file-ext type-exts)) t)
-          (t nil))))
+    (and (member file-ext type-exts)
+         (cl-every #'(lambda (x) (memq x field-keys)) type-fields)
+         (cl-every #'(lambda (x) (member x tags)) req-tags))))
 
 (defun phi-is-type-p (buffer type &rest args)
   "Return `t' if BUFFER complies with the appropriate verification
