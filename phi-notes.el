@@ -257,8 +257,8 @@ names conform to `phi-tag-regex'."
 
 (defun phi-journal-header (id title tags _parent-props _extra-fields)
   (format "\
-  Date: %s
-  Tags: %s
+\tDate: %s
+\tTags: %s
 
 %s
 
@@ -275,7 +275,7 @@ names conform to `phi-tag-regex'."
                      (point))) ;; limit the seek to the first lines
            (fields nil)
            (field-key-str nil))
-      (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" endpos t)
+      (while (search-forward-regexp "^\t\\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
                      (cons (intern (downcase field-key-str))
@@ -1625,8 +1625,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
     (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
-           (width-title (round (/ (1- width-left) 1.24)))
-           (width-citekey (- width-left width-title 2))
+           (width-title (1- width-left))
            (display (car candidate))
            (citekey (match-string 5 display)))
       (cons
@@ -1636,10 +1635,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                  (propertize (match-string 1 display) 'face 'font-lock-function-name-face)
                  (propertize (match-string 2 display) 'face 'font-lock-builtin-face))
          width-title nil ?\s t #'helm-moccur-buffer) ;; id and title
-        ;; " "
-        ;; (truncate-string-to-width
-        ;;  (propertize (match-string 5 display) 'face 'font-lock-builtin-face)
-        ;;  width-citekey nil ?\s t #'font-lock-function-name-face) ;; citekey
         " "
         (truncate-string-to-width
          (propertize (concat (when (not (string= citekey "")) (concat citekey " ")) (match-string 4 display)) 'face 'font-lock-keyword-face)
