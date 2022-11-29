@@ -393,22 +393,24 @@ the appropriate metadata : `:description', `:id', `:repository'."
   "Header for notes using Org format."
   (let* ((parent-id (alist-get 'id parent-props))
          (filetags (when tags
-                       (concat ":"
-                               (string-join tags ":")
-                               ":")))
-         (extras (mapcar
-                  #'(lambda (x) (format "#+%s: %s\n"
-                                        (upcase (symbol-name (car x)))
-                                        (cdr x)))
-                  extra-fields)))
-    (concat
-     (format "\
+                     (concat ":"
+                             (string-join tags ":")
+                             ":")))
+         (extras (mapcar #'(lambda (x)
+                             (format "#+%s: %s\n"
+                                     (upcase (symbol-name (car x)))
+                                     (cdr x)))
+                         extra-fields)))
+    (concat (format "\
 #+TITLE: %s
 #+ID: %s\n" title id)
-     (when parent-id (format "#+UPLINK: %s\n" parent-id))
-     (when filetags (format "#+FILETAGS: %s\n" filetags))
-     (when extras (apply #'concat extras))
-     "\n")))
+            (when parent-id
+              (format "#+UPLINK: %s\n" parent-id))
+            (when filetags
+              (format "#+FILETAGS: %s\n" filetags))
+            (when extras
+              (apply #'concat extras))
+            "\n")))
 
 (defun phi-org-get-fields (buffer)
   (save-excursion
