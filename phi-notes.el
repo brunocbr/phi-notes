@@ -626,10 +626,12 @@ with some contents."
                           (cons k
                                 (read-string (format "%s: " k)
                                              (alist-get k transformed-fields)))))
-         (tags (phi-read-tags (seq-uniq (append
-                                         (plist-get args :tags)
-                                         (alist-get 'required-tags type-props))
-                                        #'string=)))
+         (tags (sort
+                (phi-read-tags
+                 (seq-uniq (append (plist-get args :tags)
+                                   (alist-get 'required-tags type-props))
+                           #'string=))
+                'string<))
          (body (plist-get args :body))
          (id (phi-inc-counter repo-dir))
          (filename (concat repo-dir "/" id
