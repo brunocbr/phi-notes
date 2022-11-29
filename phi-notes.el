@@ -275,7 +275,7 @@ names conform to `phi-tag-regex'."
 "
           (format-time-string "%e %B %Y %H:%M")
           (phi-md-hashtags-str tags)
-          (or title (format-time-string "%F"))))
+          (or title (format-time-string "%A"))))
 
 (defun phi-journal-get-fields (buffer)
   (save-excursion
