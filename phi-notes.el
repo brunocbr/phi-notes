@@ -1534,7 +1534,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 ;; helm-phi ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun helm-phi--extract-id-from-cadidate-re ()
-  (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$"))
+  (concat "^\\(" phi-id-regex "\\)\s*\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$"))
 
 (defun helm-phi--get-file-name (candidate)
   (let* ((file-line (helm-grep-split-line candidate))
@@ -1591,7 +1591,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
           (sort (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
-                                                t (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
+                                                t (concat "^" phi-id-regex "\s*\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)
                 #'(lambda (x y) (time-less-p (file-attribute-modification-time (cdr y)) (file-attribute-modification-time (cdr x)))))))
 
 (defun helm-phi-source-data-unsorted (&optional path)
@@ -1604,8 +1604,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          (tags (plist-get contents :tags))
          (citekey (plist-get contents :citekey)))
     (cons
-     (format "%s::%s::%s" file (or tags "")
-             (or (when citekey (concat "@" citekey)) ""))
+     (format "%s::%s::%s"
+             file
+             (or tags "")
+             (or (when citekey
+                   (concat "@" citekey))
+                 ""))
      (expand-file-name file))))
 
 (defun helm-phi--source-data-items (item-list)
@@ -1666,7 +1670,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                  'helm-phi-new-note)))))
 
 (defun helm-phi-formatter (candidate)
-  (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
+  (when (string-match (concat "\\(" phi-id-regex "\\)\s*\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
     (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
            (width-title (1- width-left))
