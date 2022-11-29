@@ -257,8 +257,8 @@ names conform to `phi-tag-regex'."
 
 (defun phi-journal-header (id title tags _parent-props _extra-fields)
   (format "\
-  Date: %s
-  Tags: %s
+\tDate: %s
+\tTags: %s
 
 %s
 
@@ -275,7 +275,7 @@ names conform to `phi-tag-regex'."
                      (point))) ;; limit the seek to the first lines
            (fields nil)
            (field-key-str nil))
-      (while (search-forward-regexp "^  \\([[:alnum:]]+\\):\\s-*" endpos t)
+      (while (search-forward-regexp "^\t\\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
                      (cons (intern (downcase field-key-str))
