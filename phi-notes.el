@@ -1646,6 +1646,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                      "Navigate wiki linked notes"
                      'helm-phi-wiki-linked-action))
 
+(defun helm-phi-new-note (candidate)
+  (phi-new-note :title candidate))
+
 (defun helm-phi--build-sources ()
   (require 'helm-find)
   (append
@@ -1660,7 +1663,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    (list
     (helm-build-dummy-source "Create a new note"
       :action (helm-make-actions "Create a new note"
-                                 'phi-new-note)))))
+                                 'helm-phi-new-note)))))
 
 (defun helm-phi-formatter (candidate)
   (when (string-match (concat "\\(" phi-id-regex "\\)\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
