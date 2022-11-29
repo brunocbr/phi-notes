@@ -488,12 +488,11 @@ working with temporary buffers with no corresponding files."
                  (funcall read-tags-fn fields)))
          (type-fields (alist-get 'extra-fields type-props)))
     (cond ((and (member file-ext type-exts)
-                (every #'(lambda (x) (member x tags)) req-tags)) t)
-          ((and type-fields
-                (member file-ext type-exts)
-                (every #'(lambda (x) (memq x field-keys)) type-fields)) t)
+                (cl-every #'(lambda (x) (memq x field-keys)) type-fields)
+                (cl-every #'(lambda (x) (member x tags)) req-tags)) t)
           ((and (null tags)
                 (null req-tags)
+                (null type-fields)
                 (member file-ext type-exts)) t)
           (t nil))))
 
