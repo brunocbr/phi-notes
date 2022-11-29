@@ -180,6 +180,16 @@ tags:	 	%s
   :type 'string
   :group 'phi)
 
+(defcustom phi-author-name nil
+  "Author name for notes (overriding system user information)"
+  :type 'string
+  :group 'phi)
+
+(defcustom phi-date-format "%F"
+  "Date format for notes"
+  :type 'string
+  :group 'phi)
+
 (defcustom phi-persistent-cache t
   "True if cache should be persistent (written on disk)"
   :type 'boolean
@@ -265,7 +275,7 @@ names conform to `phi-tag-regex'."
 "
           (format-time-string "%e %B %Y %H:%M")
           (phi-md-hashtags-str tags)
-          (or title (format-time-string "%A"))))
+          (or title (format-time-string "%F"))))
 
 (defun phi-journal-get-fields (buffer)
   (save-excursion
@@ -432,6 +442,21 @@ the appropriate metadata : `:description', `:id', `:repository'."
   (let ((orgtags (alist-get 'filetags fields)))
     (when orgtags (split-string orgtags ":" t))))
 
+
+(defun phi-author-date-fill (fields)
+  "Return author and date fields filled with the user name and the
+current date. System user name may be overriden by
+`phi-author-name'. Date format may be set with `phi-date-format',
+defaulting to ISO 8601 date."
+(let* ((author-name (or phi-author-name
+                        (user-full-name)
+                        (user-login-name)))
+       (date-format (or phi-date-format
+                        "%F"))
+       (date (format-time-string date-format)))
+  (list (cons 'author author-name)
+        (cons 'date date))))
+
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
 (defun phi--type-prop (prop type)
@@ -516,6 +541,17 @@ map from more to less specific types)."
                        (get-fields-function . phi-md-get-fields)
                        (insert-link-function . phi-md-insert-link)
                        (type-check-function . phi-basic-type-check-p)))
+    (author-date . ((description . "Author & Date")
+                    (file-extensions . ("markdown" "md"))
+                    (extra-fields . (author date))
+                    (required-tags . ())
+                    (header-function . phi-md-header)
+                    (tag-reader-function . phi-md-tag-reader)
+                    (tag-writer-function . nil)
+                    (get-fields-function . phi-md-get-fields)
+                    (insert-link-function . phi-md-insert-link)
+                    (transform-fields-function . phi-author-date-fill)
+                    (type-check-function . phi-basic-type-check-p)))
     (tlg-text . ((description . "TLG Text")
                  (file-extensions . ("markdown"))
                  (extra-fields . (ref_tlg section line))
@@ -580,11 +616,16 @@ with some contents."
 
          ;; fields not matching extra-fields will be filtered:
          (input-fields (plist-get args :fields))
+         (transform-fields-fn (alist-get 'transform-fields-function type-props))
+         (transformed-fields (append
+                              (when (functionp transform-fields-fn)
+                                       (funcall transform-fields-fn input-fields))
+                              input-fields))
          (fields (cl-loop for k in extra-fields
                           collect
                           (cons k
                                 (read-string (format "%s: " k)
-                                             (alist-get k input-fields)))))
+                                             (alist-get k transformed-fields)))))
          (tags (phi-read-tags (seq-uniq (append
                                          (plist-get args :tags)
                                          (alist-get 'required-tags type-props))
