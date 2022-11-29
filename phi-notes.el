@@ -307,7 +307,7 @@ for text editors that don't identify YALM sections (e. g.
   "Return the YAML frontmatter for a Markdown note."
   (let ((basic (format "\
 title: %S
-id:	Φ%s\n" title id))
+id:	%s\n" title id))
          (extra (phi--yaml-fields extra-fields))
          (hashtags (format "tags: %s" (or (phi-md-hashtags-str tags) ""))))
     (phi--yaml-section-wrap (concat basic extra hashtags))))
