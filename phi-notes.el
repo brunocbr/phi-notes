@@ -1606,7 +1606,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (pop-to-buffer buffer)))
 
 (defun helm-phi-find-note-action (candidate)
-  (find-file candidate))
+  (find-file candidate)
+  (phi-mode))
 
 (defun helm-phi-source-data-sorted (&optional path)
   (mapcar #'car
