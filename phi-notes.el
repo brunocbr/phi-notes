@@ -761,23 +761,21 @@ Keyword arguments may override `:repository', `:type',
 ;; NAVIGATION
 
 (defvar phi-navigation-history '())
+(defvar phi-navigation-previous nil)
 
 (defun phi-navigation-history-keeper ()
   (when phi-mode
     (let* ((buf (current-buffer))
            (file (expand-file-name (buffer-file-name buf)))
            (prev (first phi-navigation-history)))
-      (unless (or (minibufferp buf)
-                  (eql prev buf))
-        (setq phi-navigation-history
-              (append (list file) (delete file phi-navigation-history)))))))
+      (setq phi-navigation-history
+            (append (list file) (delete file phi-navigation-history)))
+      (set (make-local-variable 'phi-navigation-previous) prev))))
 
 (defun phi-navigate-previous ()
   (interactive)
-  (let* ((_this (pop phi-navigation-history))
-         (prev (pop phi-navigation-history)))
-    (when prev
-      (find-file prev))))
+  (when phi-navigation-previous
+    (phi--pop-to-buffer-maybe (find-file-noselect phi-navigation-previous))))
 
 (add-hook 'window-configuration-change-hook 'phi-navigation-history-keeper)
 
