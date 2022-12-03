@@ -42,5 +42,4 @@ corresponding to repository NAME."
                                :export #'org-link-phi-export
                                :store (org-link-phi-store-function r)))))
 
-(org-link-phi-register-link-types)
 (provide 'ol-phi)
