@@ -760,10 +760,16 @@ Keyword arguments may override `:repository', `:type',
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; NAVIGATION
 
-(defvar phi-navigation-history '())
-(defvar phi-navigation-previous nil)
+(defvar phi-navigation-history '()
+  "Holds a list of file names of viewed notes, last to first.")
+
+(defvar phi-navigation-previous nil
+  "Local variable keeping the name of the last note viewed when the
+current note was first visited.")
 
 (defun phi-navigation-history-keeper ()
+  "Keep a navigation history of notes visited. The function is
+intended to serve as a hook for `window-configuration-change-hook'."
   (when phi-mode
     (let* ((buf (current-buffer))
            (file (expand-file-name (buffer-file-name buf)))
