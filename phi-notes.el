@@ -765,16 +765,19 @@ Keyword arguments may override `:repository', `:type',
 (defun phi-navigation-history-keeper ()
   (when phi-mode
     (let* ((buf (current-buffer))
+           (file (expand-file-name (buffer-file-name buf)))
            (prev (first phi-navigation-history)))
       (unless (or (minibufferp buf)
                   (eql prev buf))
-        (setq phi-navigation-history (append (list buf) (delete buf phi-navigation-history)))))))
+        (setq phi-navigation-history
+              (append (list file) (delete file phi-navigation-history)))))))
 
 (defun phi-navigate-previous ()
   (interactive)
   (let* ((_this (pop phi-navigation-history))
          (prev (pop phi-navigation-history)))
-    (switch-to-buffer prev)))
+    (when prev
+      (find-file prev))))
 
 (add-hook 'window-configuration-change-hook 'phi-navigation-history-keeper)
 
