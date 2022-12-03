@@ -31,6 +31,7 @@ corresponding to repository NAME."
   (lambda
     (concat (when description (concat description " ")) "[[" link "]]")))
 
+;;;###autoload
 (defun org-link-phi-register-link-types ()
   "Add Org link types for each note repository."
   (interactive)
