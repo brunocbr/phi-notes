@@ -758,6 +758,27 @@ Keyword arguments may override `:repository', `:type',
     new-buf))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; NAVIGATION
+
+(defvar phi-navigation-history '())
+
+(defun phi-navigation-history-keeper ()
+  (when phi-mode
+    (let* ((buf (current-buffer))
+           (prev (first phi-navigation-history)))
+      (unless (or (minibufferp buf)
+                  (eql prev buf))
+        (setq phi-navigation-history (append (list buf) (delete buf phi-navigation-history)))))))
+
+(defun phi-navigate-previous ()
+  (interactive)
+  (let* ((_this (pop phi-navigation-history))
+         (prev (pop phi-navigation-history)))
+    (switch-to-buffer prev)))
+
+(add-hook 'window-configuration-change-hook 'phi-navigation-history-keeper)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;###autoload
 (defun phi-initialize-counter (&optional dir value)
@@ -1797,7 +1818,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (define-key map (kbd "C-c n d") #'phi-create-descendant)
     (define-key map (kbd "C-c n k") #'phi-kill-to-new-note)
     (define-key map (kbd "C-c n y") #'phi-yank-to-new-note)
-    (define-key map (kbd "C-c u") #'phi-visit-parent-note)
+    (define-key map (kbd "C-c u") #'phi-navigate-previous)
     (define-key map (kbd "C-c j") #'phi-visit-next-link)
     (define-key map (kbd "C-c f b") #'phi-backlinks)
     (define-key map (kbd "C-c f t") #'helm-phi-find-like-tags)
