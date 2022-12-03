@@ -770,7 +770,8 @@ Keyword arguments may override `:repository', `:type',
            (prev (first phi-navigation-history)))
       (setq phi-navigation-history
             (append (list file) (delete file phi-navigation-history)))
-      (set (make-local-variable 'phi-navigation-previous) prev))))
+      (unless phi-navigation-previous
+        (set (make-local-variable 'phi-navigation-previous) prev)))))
 
 (defun phi-navigate-previous ()
   (interactive)
