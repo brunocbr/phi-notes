@@ -1299,10 +1299,13 @@ there's no match"
   (let* ((tags (shell-command-to-string (concat
                                           "grep -I -ohir -e "
                                           (shell-quote-argument
-                                           phi-hashtag-symbol
-                                           phi-tag-regex)
+                                           "#[[:alnum:]\\./-_]\\+" ;; TODO
+                                           )
                                           " "
-                                          (phi-notes-path 'enforce-path) " 2>/dev/null")))
+                                          (file-name-directory
+                                           (buffer-file-name (current-buffer)))
+                                          " 2>/dev/null"
+                                          )))
          (tag-list (split-string tags "\n" t)))
     (delete-dups tag-list)))
 
@@ -1768,11 +1771,6 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         :history 'helm-ag--helm-history))
 
 ;;;###autoload
-(defun helm-ag-phi-find-like-tags ()
-  (interactive)
-  (helm-do-phi-ag (phi-get-note-field-contents phi-tags-field)))
-
-;;;###autoload
 (defun helm-ag-phi-find ()
   (interactive)
   (helm-do-phi-ag nil))
@@ -1789,8 +1787,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 ;;;###autoload
 (defun helm-phi-find-like-tags ()
   (interactive)
-  (helm-phi-find (phi-get-note-field-contents phi-tags-field)))
-
+  (helm-phi-find (phi-md-hashtags-str (phi-get-tags (current-buffer)))))
 
 ;;;###autoload
 (defun helm-phi-insert ()
