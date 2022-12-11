@@ -468,11 +468,11 @@ defaulting to ISO 8601 date."
   "Return `t' if the BUFFER conforms to basic verification checks
 for a note of type TYPE. The conditions tested are the buffer file
 name having valid extension and the note having all required
-tags; or having the appropriate file extension and all
-type-specific extra-fields.
+tags and all type-specific required extra-fields.
 
-The extension may be supplied with `:extension', notably when
-working with temporary buffers with no corresponding files."
+The extension may be supplied with `:extension'. Notably, it
+should be supplied when working with temporary buffers with no
+corresponding files."
   (let* ((type-props (alist-get type phi-note-types))
          (type-exts (alist-get 'file-extensions type-props))
          (file-ext (or (plist-get (flatten-list args) :extension)
