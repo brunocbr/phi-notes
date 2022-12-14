@@ -1061,9 +1061,14 @@ there's no match"
       contents)))
 
 
-(defun phi-has-tag (tag)
-  (let ((tags (phi-get-note-field-contents phi-tags-field)))
-    (not (null (string-match-p (concat phi-hashtag-symbol tag "\\b") tags)))))
+(defun phi-has-tag (tag &optional buffer &rest args)
+  (let* ((buf (or buffer (current-buffer)))
+         (type (or (plist-get args :type)
+                   (phi-guess-type buf args)))
+         (fields (phi-get-fields buf :type type))
+         (read-tags-fn (phi--type-prop 'tag-reader-function type))
+         (tags (funcall read-tags-fn fields)))
+    (member tag tags)))
 
 (defun phi-set-note-field-contents (field value)
   "Insert or update a field in the note's YAML frontmatter."
