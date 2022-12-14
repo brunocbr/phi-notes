@@ -1007,7 +1007,7 @@ there's no match"
   (let* ((buf (or buffer
                  (current-buffer)))
         (fields (phi-get-fields buf)))
-    (plist-get fields (intern field)))) ;; TODO: interim solution
+    (alist-get (intern field) fields))) ;; TODO: interim solution
 
     ;; (with-current-buffer buf
     ;;   (save-excursion
