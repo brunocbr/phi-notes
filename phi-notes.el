@@ -1062,6 +1062,10 @@ there's no match"
 
 
 (defun phi-has-tag (tag &optional buffer &rest args)
+  "Return non-nil if the note has the specified TAG.
+
+The note type may be specified with the keyword argument `:type',
+or otherwise it will be guessed."
   (let* ((buf (or buffer (current-buffer)))
          (type (or (plist-get args :type)
                    (phi-guess-type buf args)))
