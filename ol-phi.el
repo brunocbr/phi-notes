@@ -7,8 +7,18 @@
   "Return the open function for an Org link type corresponding to
 repository NAME."
   (function
-   (lambda (id _)
-     (phi-find-note id name))))
+   (lambda (path _)
+     (let ((option (and (string-match "::\\(.*\\)" path)
+		                    (match-string 1 path)))
+           (id (or (and (string-match "^\\(.+\\)::" path)
+                        (match-string 1 path))
+                   path)))
+       (phi-find-note id name)
+       (when option
+         (let ((point (save-excursion
+                        (goto-char (point-min))
+                        (search-forward option))))
+           (when point (goto-char point))))))))
 
 (defun org-link-phi-store-function (name)
   "Create the link store function for an Org link type
