@@ -2,6 +2,7 @@
 
 (require 'ol)
 (require 'phi-notes)
+(require 'pulse)
 
 (defun org-link-phi-open-function (name)
   "Return the open function for an Org link type corresponding to
@@ -18,7 +19,9 @@ repository NAME."
          (let ((point (save-excursion
                         (goto-char (point-min))
                         (search-forward option))))
-           (when point (goto-char point))))))))
+           (when point
+             (goto-char point)
+             (pulse-momentary-highlight-one-line))))))))
 
 (defun org-link-phi-store-function (name)
   "Create the link store function for an Org link type
