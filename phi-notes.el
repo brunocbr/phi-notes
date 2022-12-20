@@ -963,11 +963,18 @@ there's no match"
   (some #'(lambda (r) (when (phi-in-repository-p path r) r))
         (mapcar 'car phi-repository-alist)))
 
+(defun phi-filename (id &optional repo)
+  "Return the filename for note ID. If optional parameter REPO is not provided,
+assume the repository for the current buffer."
+  (let* ((path (phi--get-repository-path (or repo
+                                             (phi-buffer-repository))))
+         (filename (phi-matching-file-name id nil path)))
+    filename))
+
 ;;;###autoload
 (defun phi-find-note (id repo)
   "Visit note `ID' in repository `REPO'"
-  (let* ((path (phi--get-repository-path repo))
-         (filename (phi-matching-file-name id nil path)))
+  (let ((filename (phi-filename id repo)))
     (if filename
         (phi--pop-to-buffer-maybe (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
