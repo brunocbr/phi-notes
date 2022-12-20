@@ -21,6 +21,7 @@ repository NAME."
                         (search-forward option))))
            (when point
              (goto-char point)
+             (recenter)
              (pulse-momentary-highlight-one-line))))))))
 
 (defun org-link-phi-store-function (name)
