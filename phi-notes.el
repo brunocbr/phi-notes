@@ -933,13 +933,6 @@ If USECONTEXT is not nil, enforce setting the current directory to the note's di
 (defun phi--is-project-p (id)
   (string-match-p (concat phi-hashtag-symbol phi-project-tag) (or (phi--get-tags-from-note-as-str id) "")))
 
-(defun phi-get-ancestor-project-id (id)
-  (and id
-       (or (and (phi--is-project-p id) id)
-           (with-current-buffer (find-file-noselect (phi-matching-file-name id))
-             (or (phi-get-linked-project-note-id)
-                 (phi-get-ancestor-project-id (phi-get-parent-note-id)))))))
-
 (defun phi-get-linked-project-note-id ()
   "Return the id for the project this note is linked to"
   (let ((project (phi-get-note-field-contents phi-project-field)))
@@ -1426,7 +1419,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun phi-sidebar-with-parent ()
   "Open PHI Sidebar with linked project, parent or master note"
   (interactive)
-  (phi-sidebar-create-window (or (phi-get-linked-project-note-id) (phi-get-ancestor-project-id (phi-get-current-note-id)) (phi-get-parent-note-id) (phi--master-note-id))))
+  (phi-sidebar-create-window (or
+                              (phi-get-linked-project-note-id)
+                              (phi--master-note-id))))
 
 ;;;###autoload
 (defun phi-toggle-sidebar ()
