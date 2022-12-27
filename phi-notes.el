@@ -37,6 +37,9 @@
 
 ;;; Code:
 
+(require 'helm-source)
+(require 'pulse)
+
 ;;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Options
