@@ -1347,7 +1347,8 @@ Used by `phi-sidebar-shrink-window' and `phir-sidebar-enlarge-window'."
 (defcustom phi-sidebar-display-alist
   '((side . left)
     (window-width . 45)
-    (slot . -1))
+    (slot . -1)
+    (mode-line-format . nil))
   "Association list used to display PHI sidebar buffer.
 See `display-buffer-in-side-window' for example options."
   :type 'alist
