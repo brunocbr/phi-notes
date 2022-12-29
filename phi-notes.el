@@ -905,10 +905,10 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 ;;;###autoload
 (defun phi-buffer-repository (&optional buf)
   "Get the repository name for buffer `BUF', or the current buffer if `nil'."
-  (let ((filename (expand-file-name (buffer-file-name (or buf
-                                                          (current-buffer))))))
+  (let ((filename (buffer-file-name (or buf
+                                        (current-buffer)))))
     (if filename
-        (cdr (assoc (file-name-directory filename)
+        (cdr (assoc (file-name-directory (expand-file-name filename))
                     (mapcar (lambda (x)
                               (cons
                                (file-name-directory (expand-file-name (cadr x)))
