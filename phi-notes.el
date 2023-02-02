@@ -363,7 +363,7 @@ frontmatter of BUFFER."
           (if yaml-end-pos
             ;; If YAML block is found, collect the fields
               (progn
-                (while (search-forward-regexp "^\\([[:alnum:]]+\\):\\s-*" yaml-end-pos t)
+                (while (search-forward-regexp "^\\([[:alnum:]-_]+\\):\\s-*" yaml-end-pos t)
                   (setq field-key-str (match-string-no-properties 1))
                   (add-to-list 'fields
                                (cons (intern field-key-str)
