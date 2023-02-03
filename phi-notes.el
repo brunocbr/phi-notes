@@ -908,7 +908,7 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (let ((filename (buffer-file-name (or buf
                                         (current-buffer)))))
     (if filename
-        (cdr (assoc (file-name-directory filename)
+        (cdr (assoc (file-name-directory (expand-file-name filename))
                     (mapcar (lambda (x)
                               (cons
                                (file-name-directory (expand-file-name (cadr x)))
