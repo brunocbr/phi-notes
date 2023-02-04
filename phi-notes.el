@@ -906,13 +906,14 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 (defun phi-buffer-repository (&optional buf)
   "Get the repository name for buffer `BUF', or the current buffer if `nil'."
   (let ((filename (buffer-file-name (or buf
-                                        (current-buffer)))))
+                                        (current-buffer))))
+        (repo-dirs (mapcar (lambda (x)
+                             (cons
+                              (directory-file-name (expand-file-name (cadr x)))
+                              (first x))) phi-repository-alist)))
     (if filename
-        (cdr (assoc (directory-file-name (expand-file-name filename))
-                    (mapcar (lambda (x)
-                              (cons
-                               (file-name-directory (expand-file-name (cadr x)))
-                               (first x))) phi-repository-alist))))))
+        (cdr (assoc (directory-file-name (file-name-directory (expand-file-name filename)))
+                    repo-dirs)))))
 
 (defun phi-matching-file-name (id &optional usecontext path)
   "Return the first match of a file name starting with ID.
@@ -1663,7 +1664,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (mapcar #'helm-phi-source-data-item
           item-list))
 
-q(defun helm-phi-source-data-with-tags (&optional path)
+(defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
 ;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
   (mapcar #'helm-phi-source-data-item (helm-phi-source-data-sorted path)))
