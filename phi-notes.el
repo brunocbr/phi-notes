@@ -908,7 +908,7 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   (let ((filename (buffer-file-name (or buf
                                         (current-buffer)))))
     (if filename
-        (cdr (assoc (file-name-directory (expand-file-name filename))
+        (cdr (assoc (directory-file-name (expand-file-name filename))
                     (mapcar (lambda (x)
                               (cons
                                (file-name-directory (expand-file-name (cadr x)))
@@ -1663,7 +1663,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (mapcar #'helm-phi-source-data-item
           item-list))
 
-(defun helm-phi-source-data-with-tags (&optional path)
+q(defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
 ;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
   (mapcar #'helm-phi-source-data-item (helm-phi-source-data-sorted path)))
@@ -1706,7 +1706,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    (cl-loop
     for repo in phi-repository-alist
     collect (helm-build-sync-source (car repo)
-              :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
+              :candidates  ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
 ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
 ;;              :keymap helm-find-files-map ;; FIXME
