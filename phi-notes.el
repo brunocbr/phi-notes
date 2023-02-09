@@ -1720,7 +1720,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-formatter (candidate)
   (when (string-match (concat "\\(" phi-id-regex "\\)\s*\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
-    (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
+    (let* ((helm-window-body-width (with-helm-window (window-body-width)))
+           (width-left (round (/ (with-helm-window (1- helm-window-body-width)) 1.61)))
            (width-title (1- width-left))
            (display (car candidate))
            (citekey (match-string 5 display)))
@@ -1734,7 +1735,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         " "
         (truncate-string-to-width
          (propertize (concat (when (not (string= citekey "")) (concat citekey " ")) (match-string 4 display)) 'face 'font-lock-keyword-face)
-         (- (window-body-width) 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
+         (- helm-window-body-width 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
        (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
