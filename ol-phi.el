@@ -4,25 +4,21 @@
 (require 'phi-notes)
 (require 'pulse)
 
-(defun org-link-phi-open-function (name)
+(defun org-link-phi-open-function (repo)
   "Return the open function for an Org link type corresponding to
-repository NAME."
+repository REPO."
   (function
    (lambda (path _)
-     (let ((option (and (string-match "::\\(.*\\)" path)
-		                    (match-string 1 path)))
-           (id (or (and (string-match "^\\(.+\\)::" path)
-                        (match-string 1 path))
-                   path)))
-       (phi-find-note id name)
-       (when option
-         (let ((point (save-excursion
-                        (goto-char (point-min))
-                        (search-forward option))))
-           (when point
-             (goto-char point)
-             (recenter)
-             (pulse-momentary-highlight-one-line))))))))
+     (let* ((id (or (and (string-match "^\\(.+\\)::" path) ;; note id with search options
+                         (match-string 1 path))
+                    path))
+            (option (and (string-match "::\\(.*\\)\\'" path)
+		                     (match-string 1 path))) 
+            (filename (phi-filename id repo)))
+       (apply #'org-open-file
+              filename
+              ;; option is always a search string
+              (list nil nil option))))))
 
 (defun org-link-phi-store-function (name)
   "Create the link store function for an Org link type
