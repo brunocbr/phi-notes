@@ -2,23 +2,24 @@
 
 (require 'ol)
 (require 'phi-notes)
-(require 'pulse)
 
 (defun org-link-phi-open-function (repo)
   "Return the open function for an Org link type corresponding to
 repository REPO."
   (function
-   (lambda (path _)
+   (lambda (path arg)
      (let* ((id (or (and (string-match "^\\(.+\\)::" path) ;; note id with search options
                          (match-string 1 path))
                     path))
             (option (and (string-match "::\\(.*\\)\\'" path)
-		                     (match-string 1 path))) 
+		                     (match-string 1 path)))
             (filename (phi-filename id repo)))
        (apply #'org-open-file
               filename
+              arg
               ;; option is always a search string
-              (list nil nil option))))))
+              (cond ((not option) nil)
+                    (t (list nil option))))))))
 
 (defun org-link-phi-store-function (name)
   "Create the link store function for an Org link type
