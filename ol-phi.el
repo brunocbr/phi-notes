@@ -42,7 +42,7 @@ corresponding to repository NAME."
 
 (defun org-link-phi-export (link description _format _channel)
   "Export wiki link for LINK"
-  (lambda
+  (lambda ()
     (concat (when description (concat description " ")) "[[" link "]]")))
 
 ;;;###autoload
