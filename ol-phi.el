@@ -3,7 +3,7 @@
 (require 'ol)
 (require 'phi-notes)
 
-(defun org-link-phi-open-function (repo)
+(defun org-link-phi-open-make-function (repo)
   "Return the open function for an Org link type corresponding to
 repository REPO."
   (function
@@ -21,7 +21,7 @@ repository REPO."
               (cond ((not option) nil)
                     (t (list nil option))))))))
 
-(defun org-link-phi-store-function (name)
+(defun org-link-phi-store-make-function (name)
   "Create the link store function for an Org link type
 corresponding to repository NAME."
   (function
@@ -50,8 +50,8 @@ corresponding to repository NAME."
   (let ((repositories (mapcar 'car phi-repository-alist)))
     (dolist (r repositories)
       (org-link-set-parameters r
-                               :follow (org-link-phi-open-function r)
+                               :follow (org-link-phi-open-make-function r)
                                :export #'org-link-phi-export
-                               :store (org-link-phi-store-function r)))))
+                               :store (org-link-phi-store-make-function r)))))
 
 (provide 'ol-phi)
