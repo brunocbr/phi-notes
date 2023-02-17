@@ -37,10 +37,11 @@ corresponding to repository NAME."
           :link link
           :description title))))))
 
-(defun org-link-phi-export (link description _format _channel)
+(defun org-link-phi-export (link description format _channel)
   "Export wiki link for LINK"
-  (lambda ()
-    (concat (when description (concat description " ")) "[[" link "]]")))
+    (cond
+     ((eq 'md format)
+      (concat (when description (concat description " ")) "[[" link "]]"))))
 
 ;;;###autoload
 (defun org-link-phi-register-link-types ()
