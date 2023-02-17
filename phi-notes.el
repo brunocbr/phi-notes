@@ -377,7 +377,7 @@ frontmatter of BUFFER."
   "Function to insert a wikilink for Markdown notes in BUFFER. LINK
 is a plist with appropriate metadata: `:description', `:id',
 `:repository'"
-  (let* ((description (plist-get link :description))
+  (let* ((description (or (plist-get link :description) ""))
          (target-id (plist-get link :id))
          (repository (plist-get link :repository))
          (link-pre (or (plist-get link :prepend) ""))
