@@ -906,13 +906,14 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 (defun phi-buffer-repository (&optional buf)
   "Get the repository name for buffer `BUF', or the current buffer if `nil'."
   (let ((filename (buffer-file-name (or buf
-                                        (current-buffer)))))
+                                        (current-buffer))))
+        (repo-dirs (mapcar (lambda (x)
+                             (cons
+                              (directory-file-name (expand-file-name (cadr x)))
+                              (first x))) phi-repository-alist)))
     (if filename
-        (cdr (assoc (file-name-directory (expand-file-name filename))
-                    (mapcar (lambda (x)
-                              (cons
-                               (file-name-directory (expand-file-name (cadr x)))
-                               (first x))) phi-repository-alist))))))
+        (cdr (assoc (directory-file-name (file-name-directory (expand-file-name filename)))
+                    repo-dirs)))))
 
 (defun phi-matching-file-name (id &optional usecontext path)
   "Return the first match of a file name starting with ID.
@@ -1706,7 +1707,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    (cl-loop
     for repo in phi-repository-alist
     collect (helm-build-sync-source (car repo)
-              :candidates ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
+              :candidates  ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
 ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
 ;;              :keymap helm-find-files-map ;; FIXME
@@ -1719,7 +1720,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-formatter (candidate)
   (when (string-match (concat "\\(" phi-id-regex "\\)\s*\\(.*\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)::\\(.*\\)::\\(.*\\)$")
                       (car candidate))
-    (let* ((width-left (round (/ (with-helm-window (1- (window-body-width))) 1.61)))
+    (let* ((helm-window-body-width (with-helm-window (window-body-width)))
+           (width-left (round (/ (with-helm-window (1- helm-window-body-width)) 1.61)))
            (width-title (1- width-left))
            (display (car candidate))
            (citekey (match-string 5 display)))
@@ -1733,7 +1735,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
         " "
         (truncate-string-to-width
          (propertize (concat (when (not (string= citekey "")) (concat citekey " ")) (match-string 4 display)) 'face 'font-lock-keyword-face)
-         (- (window-body-width) 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
+         (- helm-window-body-width 3 width-left) nil ?\s t #'font-lock-keyword-face)) ;; tags
        (cdr candidate)))))
 
 (defun helm-phi-candidates-transformer (candidates)
