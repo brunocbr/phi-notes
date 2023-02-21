@@ -39,6 +39,7 @@
 
 (require 'helm-source)
 (require 'pulse)
+(require 'crm)
 
 ;;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -586,9 +587,8 @@ map from more to less specific types)."
 (defun phi-read-tags (&optional input-tags)
   "Interface for user input of tags. INPUT-TAGS is a default list
 of tags."
-  (let* ((input-str (phi-md-hashtags-str input-tags))
-         (hashtags (read-string "tags: " input-str)))
-    (phi-md-hashtags-to-list hashtags)))
+  (completing-read-multiple "tags: " (phi--grep-tag-list) nil nil
+                            (mapconcat 'identity input-tags ",")))
 
 (defun phi-create-note (type repo-dir &rest args)
   "Non-interactive function to create a new note of the type TYPE
@@ -1320,7 +1320,7 @@ or otherwise it will be guessed."
                                           " "
                                           (file-name-directory
                                            (buffer-file-name (current-buffer)))
-                                          " 2>/dev/null"
+                                          " | sed 's/^#//' 2>/dev/null"
                                           )))
          (tag-list (split-string tags "\n" t)))
     (delete-dups tag-list)))
@@ -1382,7 +1382,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   :group 'phi-sidebar-faces)
 
 (defface phi-sidebar-face
-  '((t (:height 0.9 :inherit (region))))
+  '((t (:height 0.9)))
   "Default face for the sidebar."
   :group 'phi-sidebar-faces)
 
