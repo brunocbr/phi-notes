@@ -588,7 +588,7 @@ map from more to less specific types)."
   "Interface for user input of tags. INPUT-TAGS is a default list
 of tags."
   (completing-read-multiple "tags: " (phi--grep-tag-list) nil nil
-                            (mapconcat 'identity input-tags ", ")))
+                            (mapconcat 'identity input-tags ",")))
 
 (defun phi-create-note (type repo-dir &rest args)
   "Non-interactive function to create a new note of the type TYPE
