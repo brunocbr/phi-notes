@@ -966,12 +966,12 @@ assume the repository for the current buffer."
   (let* ((path (phi--get-repository-path (or repo
                                              (phi-buffer-repository))))
          (filename (phi-matching-file-name id nil path)))
-    filename))
+    (concat path "/" filename)))
 
 ;;;###autoload
 (defun phi-find-note (id repo)
   "Visit note `ID' in repository `REPO'"
-  (let ((filename (phi-filename id repo)))
+  (let ((filename (expand-file-name (phi-filename id repo))))
     (if filename
         (phi--pop-to-buffer-maybe (find-file-noselect filename))
       (error (format "Invalid note ID %s" id)))))
