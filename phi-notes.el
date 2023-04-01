@@ -382,9 +382,12 @@ is a plist with appropriate metadata: `:description', `:id',
          (target-id (plist-get link :id))
          (repository (plist-get link :repository))
          (link-pre (or (plist-get link :prepend) ""))
-         (link-post (or (plist-get link :append) "")))
+         (link-post (or (plist-get link :append) ""))
+         (format-str (if (string= description "")
+                         "%s%s[[%s]]%s"
+                       "%s%s [[%s]]%s")))
   (with-current-buffer buffer
-    (insert (format "%s%s [[%s]]%s" link-pre description target-id link-post)))))
+    (insert (format format-str link-pre description target-id link-post)))))
 
 (defun phi-org-insert-link (buffer link)
   "Function to insert a link in an Org BUFFER. LINK is a plist with
@@ -1589,9 +1592,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     filename))
 
 (defun helm-ag-phi-insert-link-action (candidate)
-  (let* ((filename (helm-phi--get-file-name candidate))
-        (id (phi--get-note-id-from-file-name filename)))
-    (phi-insert-link (current-buffer) (list :id id))))
+  (cl-loop for cand in (helm-marked-candidates)
+           do
+           (let* ((filename (helm-phi--get-file-name cand))
+                  (id (phi--get-note-id-from-file-name filename)))
+             (phi-insert-link (current-buffer) (list :id id
+                                                     :append " ")))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
   (let ((filename (helm-phi--get-file-name candidate))
