@@ -1333,9 +1333,8 @@ or otherwise it will be guessed."
   "Insert TAG at point.
 Select TAG, with completion, from list of all tags in phi notes."
   (interactive)
-  (insert (completing-read "Tag: " (phi--grep-tag-list))))
-
-
+  (let ((tags (completing-read "Tag: " (phi--grep-tag-list))))
+    (when tags (insert (format "#%s" tags)))))
 
 ;; Sidebar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
