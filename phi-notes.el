@@ -608,7 +608,7 @@ in `phi-note-types', in order to build the header for the note.
 Use the optional keyword `:body' with a string to fill the note
 with some contents."
   (let* ((type-props (alist-get type phi-note-types))
-         (file-extension (first (alist-get 'file-extensions type-props)))
+         (file-extension (nth 0 (alist-get 'file-extensions type-props)))
          (extra-fields (alist-get 'extra-fields type-props))
          (header-fn (alist-get 'header-function type-props))
          (parent-props (plist-get args :parent-props))
@@ -779,7 +779,7 @@ intended to serve as a hook for `window-configuration-change-hook'."
   (when phi-mode
     (let* ((buf (current-buffer))
            (file (expand-file-name (buffer-file-name buf)))
-           (prev (first phi-navigation-history)))
+           (prev (nth 0 phi-navigation-history)))
       (setq phi-navigation-history
             (append (list file) (delete file phi-navigation-history)))
       (unless phi-navigation-previous
@@ -913,7 +913,7 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
         (repo-dirs (mapcar (lambda (x)
                              (cons
                               (directory-file-name (expand-file-name (cadr x)))
-                              (first x))) phi-repository-alist)))
+                              (car x))) phi-repository-alist)))
     (if filename
         (cdr (assoc (directory-file-name (file-name-directory (expand-file-name filename)))
                     repo-dirs)))))
@@ -1712,7 +1712,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
    (cl-loop
     for repo in phi-repository-alist
     collect (helm-build-sync-source (car repo)
-              :candidates  ((lambda (x) (helm-phi-source-data-with-tags (second x))) repo)
+              :candidates  ((lambda (x) (helm-phi-source-data-with-tags (nth 1 x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
 ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
 ;;              :keymap helm-find-files-map ;; FIXME
