@@ -40,6 +40,7 @@
 (require 'helm-source)
 (require 'pulse)
 (require 'crm)
+(require 'cl-macs)
 (require 'cl-extra)
 
 ;;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
