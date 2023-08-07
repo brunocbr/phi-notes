@@ -40,6 +40,7 @@
 (require 'helm-source)
 (require 'pulse)
 (require 'crm)
+(require 'cl-extra)
 
 ;;; Core Variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -960,7 +961,7 @@ REPOSITORY"
 (defun phi-repository-for-path (path)
   "Return the repository name corresponding to PATH, or `nil' if
 there's no match"
-  (some #'(lambda (r) (when (phi-in-repository-p path r) r))
+  (cl-some #'(lambda (r) (when (phi-in-repository-p path r) r))
         (mapcar 'car phi-repository-alist)))
 
 (defun phi-filename (id &optional repo)
