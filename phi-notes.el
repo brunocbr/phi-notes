@@ -736,7 +736,7 @@ Keyword arguments may override `:repository', `:type',
   (interactive)
   (let* ((buf (or (plist-get args :with-buffer)
                   (current-buffer)))
-         (type (phi-guess-type buf))
+         (type (phi-prompt-for-type))
          (get-fields-fn (phi--type-prop 'get-fields-function type))
          (read-tags-fn (phi--type-prop 'tag-reader-function type))
          (cur-fields (when (functionp get-fields-fn)
