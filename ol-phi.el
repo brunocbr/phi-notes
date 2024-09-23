@@ -1,4 +1,4 @@
-;; ol-phi.el  -*- lexical-binding:t -*-
+;;; ol-phi.el --- Org Link integration -*- lexical-binding:t -*-
 
 (require 'ol)
 (require 'phi-notes)

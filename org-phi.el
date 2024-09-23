@@ -1,4 +1,4 @@
-;; org-phi.el  -*- lexical-binding:t -*-
+;;; org-phi.el  -*- lexical-binding:t -*-
 
 (require 'org)
 (require 'bibtex-completion)
