@@ -198,7 +198,7 @@ Displays the filename (without extension), beginning of document, and vector dis
     :candidates results
     :candidate-transformer (lambda (candidates) (mapcar #'phi-brain-format-result candidates))
     :action (lambda (result) (phi-brain-jump-to-text-in-file
-                              (alist-get 'file_name (alist-get 'metadata result))
+                              (alist-get 'file_path (alist-get 'metadata result))
                               (alist-get 'document result)))))
 
 ;;;###autoload
