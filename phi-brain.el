@@ -146,26 +146,39 @@ if the list is not already cached."
 (defun phi-brain-format-result (result)
   "Format a RESULT for display in Helm.
 Displays the filename (without extension), beginning of document, and vector distance."
-  (let* ((helm-window-body-width (with-helm-window (window-body-width)))
-         (width-left (round (/ (1- helm-window-body-width) 1.61)))
-         (width-title (1- width-left))
-         (width-right (- helm-window-body-width 3 width-left))
-         (width-text (- width-right 6))
-         (id (alist-get 'id result))
+  (let* ((id (alist-get 'id result))
          (document (alist-get 'document result))
          (snippet (phi-brain--clean-string
                    (if (< 120 (length document))
                        (substring document 0 119)
                      document)))
          (distance (->> result (alist-get 'distance) (format "%.2f")))
-         (filename (->> result (alist-get 'metadata) (alist-get 'file_name)))
-         (basename (file-name-base filename)))
+         (metadata (alist-get 'metadata result))
+         (filename (->> metadata (alist-get 'file_name)))
+         (tags (or (->> metadata (alist-get 'tags)) ""))
+         (citekey (->> metadata (alist-get 'citekey)))
+         (info-str (if citekey (format "@%s %s" citekey tags)
+                     tags))
+         (basename (file-name-base filename))
+
+         (helm-window-body-width (with-helm-window (window-body-width)))
+         (width-left (round (/ (1- helm-window-body-width) 1.61)))
+         (width-tags (if (> (length info-str) 0)
+                         (round (/ (1- width-left) 2.63))
+                       0))
+         (width-title (- width-left width-tags))
+         (width-right (- helm-window-body-width 3 width-left))
+         (width-text (- width-right 6)))
     (cons
      (concat
       (truncate-string-to-width
        (format "%s"
                (propertize basename 'face 'font-lock-builtin-face))
        width-title nil ?\s t #'helm-moccur-buffer) ;; TODO: id highlight
+      " "
+      (truncate-string-to-width
+       (propertize info-str 'face 'font-lock-keyword-face)
+       width-tags nil ?\s t #'helm-moccur-buffer)
       " "
       (truncate-string-to-width
        (propertize snippet 'face 'font-lock-string-face)
