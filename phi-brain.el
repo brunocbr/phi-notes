@@ -207,10 +207,10 @@ Displays the filename (without extension), beginning of document, and vector dis
           (recenter 1)))
     (message "Text not found in file.")))
 
-(defun phi-brain-helm-source (col text &optional n-results)
-  "Create a Helm source from COL collection with optional N-RESULTS."
+(defun phi-brain-helm-source (results)
+  "Create a Helm source from RESULTS."
   (helm-build-sync-source "ChromaDB Results"
-    :candidates (lambda () (mapcar #'identity (phi-brain-query col text (or n-results 100))))
+    :candidates results
     :candidate-transformer (lambda (candidates) (mapcar #'phi-brain-format-result candidates))
     :action '(("Jump to text in file" .
                (lambda (result) (phi-brain-jump-to-text-in-file
@@ -225,8 +225,9 @@ Displays the filename (without extension), beginning of document, and vector dis
          (col (or collection-name
                   (completing-read "Select a collection : "
                                    (mapcar #'identity (phi-brain-get-collections))
-                                   nil t nil 'phi-brain-collection-completion-history))))
-    (helm :sources (phi-brain-helm-source col text n-results)
+                                   nil t nil 'phi-brain-collection-completion-history)))
+         (results (mapcar #'identity (phi-brain-query col text (or n-results 100)))))
+    (helm :sources (phi-brain-helm-source results)
           :buffer "*helm phi-brain results*")))
 
 (provide 'phi-brain)
