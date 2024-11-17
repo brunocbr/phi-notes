@@ -146,8 +146,7 @@ if the list is not already cached."
 (defun phi-brain-format-result (result)
   "Format a RESULT for display in Helm.
 Displays the filename (without extension), beginning of document, and vector distance."
-  (let* ((id (alist-get 'id result))
-         (document (alist-get 'document result))
+  (let* ((document (alist-get 'document result))
          (snippet (phi-brain--clean-string
                    (if (< 120 (length document))
                        (substring document 0 119)
@@ -188,7 +187,8 @@ Displays the filename (without extension), beginning of document, and vector dis
      result)))
 
 (defun phi-brain-jump-to-text-in-file (file-name text)
-  "Open FILE-NAME and jump to the first occurrence of TEXT, highlighting it momentarily."
+  "Open FILE-NAME and jump to the first occurrence of TEXT,
+highlighting it momentarily."
   ;; Open the file
   (find-file file-name)
   ;; Move to the beginning of the buffer
@@ -235,7 +235,8 @@ Displays the filename (without extension), beginning of document, and vector dis
 
 ;;;###autoload
 (defun phi-brain-helm-search (&optional text collection-name n-results)
-  "Search the current buffer content or selected text in COLLECTION-NAME with optional N-RESULTS."
+  "Search the current buffer content or selected text in
+ COLLECTION-NAME with optional N-RESULTS."
   (interactive)
   (let* ((query-text (or text (phi-brain-get-text)))
          (col (or collection-name
