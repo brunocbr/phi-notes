@@ -207,6 +207,20 @@ Displays the filename (without extension), beginning of document, and vector dis
           (recenter 1)))
     (message "Text not found in file.")))
 
+(defun phi-brain-kill-links-and-titles (selection)
+  "Kill a list of wikilinks and titles for SELECTION to the kill ring."
+  (let ((wikilinks (mapcar (lambda (result)
+                             (let ((id (alist-get 'id (alist-get 'metadata result)))
+                                   (title (alist-get 'title (alist-get 'metadata result)))
+                                   (filename (alist-get 'file_name (alist-get 'metadata result))))
+                               (format "- %s [[%s]]" (or title
+                                                         (replace-regexp-in-string "^[0-9]+ +" "" (file-name-base filename)))
+                                       id)))
+                           selection)))
+    ;; Kill the formatted WikiLinks as a single string
+    (kill-new (string-join wikilinks "\n"))
+    (message "Wikilinks and titles copied to kill ring!")))
+
 (defun phi-brain-helm-source (results)
   "Create a Helm source from RESULTS."
   (helm-build-sync-source "ChromaDB Results"
@@ -215,7 +229,9 @@ Displays the filename (without extension), beginning of document, and vector dis
     :action '(("Jump to text in file" .
                (lambda (result) (phi-brain-jump-to-text-in-file
                                  (alist-get 'file_path (alist-get 'metadata result))
-                                 (alist-get 'document result)))))))
+                                 (alist-get 'document result))))
+              ("Kill titles and wikilinks" .
+               (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))))
 
 ;;;###autoload
 (defun phi-brain-helm-search (&optional collection-name n-results)
