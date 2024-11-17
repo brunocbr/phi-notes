@@ -243,7 +243,7 @@ highlighting it momentarily."
                   (completing-read "Select a collection : "
                                    (mapcar #'identity (phi-brain-get-collections))
                                    nil t nil 'phi-brain-collection-completion-history)))
-         (results (mapcar #'identity (phi-brain-query col text (or n-results 100)))))
+         (results (mapcar #'identity (phi-brain-query col query-text (or n-results 100)))))
     (helm :sources (phi-brain-helm-source results)
           :buffer "*helm phi-brain results*")))
 
