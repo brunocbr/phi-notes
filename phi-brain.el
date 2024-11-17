@@ -86,11 +86,10 @@ Otherwise, fetch from OpenAI's API and cache the result using an MD5 hash as the
     (buffer-substring-no-properties (point-min) (point-max))))
 
 ;;;###autoload
-(defun phi-brain-query (collection-name &optional n-results text)
+(defun phi-brain-query (collection-name query-text &optional n-results)
   "Query ChromaDB using COLLECTION-NAME with optional N-RESULTS.
 Returns parsed JSON results as a list of alists."
-  (let* ((query-text (or text (phi-brain-get-text)))
-         (n-results (or n-results 5))
+  (let* ((n-results (or n-results 5))
          (output-buffer (generate-new-buffer "*phi-brain-output*"))
          (embedding (phi-brain-get-or-cache-text-embedding query-text))
          (embedding-json (json-encode embedding))
@@ -100,6 +99,7 @@ Returns parsed JSON results as a list of alists."
                         (format "--n_results=%d" n-results))))
     ;; Set the CHROMADB_PATH environment variable
     (setenv "CHROMADB_PATH" phi-brain-chromadb-path)
+    (message (format "Querying %s" collection-name))
     ;; Call the Python process with query-text as input
     (with-temp-buffer
       (insert embedding-json)
@@ -200,32 +200,33 @@ Displays the filename (without extension), beginning of document, and vector dis
         (goto-char (match-beginning 0))
         ;; Highlight the found text temporarily
         (let ((highlight (make-overlay (match-beginning 0) (match-end 0))))
-          (overlay-put highlight 'face '(:background "yellow"))
+          (overlay-put highlight 'face 'highlight)
           ;; Flash the highlight briefly
           (run-at-time "0.5 sec" nil 'delete-overlay highlight)
           ;; Center the line with the found text in the window
-          (recenter 10)))
+          (recenter 1)))
     (message "Text not found in file.")))
 
-(defun phi-brain-helm-source (results)
-  "Create a Helm source from RESULTS."
+(defun phi-brain-helm-source (col text &optional n-results)
+  "Create a Helm source from COL collection with optional N-RESULTS."
   (helm-build-sync-source "ChromaDB Results"
-    :candidates results
+    :candidates (lambda () (mapcar #'identity (phi-brain-query col text (or n-results 100))))
     :candidate-transformer (lambda (candidates) (mapcar #'phi-brain-format-result candidates))
-    :action (lambda (result) (phi-brain-jump-to-text-in-file
-                              (alist-get 'file_path (alist-get 'metadata result))
-                              (alist-get 'document result)))))
+    :action '(("Jump to text in file" .
+               (lambda (result) (phi-brain-jump-to-text-in-file
+                                 (alist-get 'file_path (alist-get 'metadata result))
+                                 (alist-get 'document result)))))))
 
 ;;;###autoload
 (defun phi-brain-helm-search (&optional collection-name n-results)
   "Search the current buffer content or selected text in COLLECTION-NAME with optional N-RESULTS."
   (interactive)
-  (let* ((col (or collection-name
+  (let* ((text (phi-brain-get-text))
+         (col (or collection-name
                   (completing-read "Select a collection : "
                                    (mapcar #'identity (phi-brain-get-collections))
-                                   nil t nil 'phi-brain-collection-completion-history)))
-         (results (mapcar #'identity (phi-brain-query col (or n-results 100)))))
-    (helm :sources (phi-brain-helm-source results)
+                                   nil t nil 'phi-brain-collection-completion-history))))
+    (helm :sources (phi-brain-helm-source col text n-results)
           :buffer "*helm phi-brain results*")))
 
 (provide 'phi-brain)
