@@ -234,10 +234,10 @@ Displays the filename (without extension), beginning of document, and vector dis
                (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))))
 
 ;;;###autoload
-(defun phi-brain-helm-search (&optional collection-name n-results)
+(defun phi-brain-helm-search (&optional text collection-name n-results)
   "Search the current buffer content or selected text in COLLECTION-NAME with optional N-RESULTS."
   (interactive)
-  (let* ((text (phi-brain-get-text))
+  (let* ((query-text (or text (phi-brain-get-text)))
          (col (or collection-name
                   (completing-read "Select a collection : "
                                    (mapcar #'identity (phi-brain-get-collections))
@@ -245,6 +245,13 @@ Displays the filename (without extension), beginning of document, and vector dis
          (results (mapcar #'identity (phi-brain-query col text (or n-results 100)))))
     (helm :sources (phi-brain-helm-source results)
           :buffer "*helm phi-brain results*")))
+
+;;;###autoload
+(defun phi-brain-helm-query (text)
+  "Prompt for text for a query"
+  (interactive "sQuery: ")
+  (message text)
+  (phi-brain-helm-search text))
 
 (provide 'phi-brain)
 
