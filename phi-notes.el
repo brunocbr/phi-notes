@@ -1,6 +1,6 @@
 ;;; phi-notes.el --- Zettelkasten note management -*- lexical-binding:t -*-
 
-;; Copyright (C) 2021-2022  Bruno Conte
+;; Copyright (C) 2021-2024  Bruno Conte
 
 ;; Author: Bruno Conte <bruno@brunoc.com.br>
 ;; URL: https://github.com/brunocbr/phi-notes/
@@ -25,7 +25,7 @@
 
 ;;; Commentary:
 ;;; define a global key somewhere, e. g.:
-;; 	(spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
+;;  (spacemacs/set-leader-keys "Co" 'phi-new-originating-note)
 ;;
 ;; for helm-bibtex support:
 ;;  (helm-bibtex-helmify-action bibtex-completion-create-phi-note helm-bibtex-create-phi-note)
@@ -55,8 +55,8 @@
 (defcustom phi-header-pre
   "\
 ---
-title:		'%s'  
-id:			Φ%s  
+title:		'%s'
+id:			Φ%s
 "
   "First part of YAML header"
   :type 'string
@@ -64,7 +64,7 @@ id:			Φ%s
 
 (defcustom phi-header-post
   "\
-tags:	 	%s
+tags:   %s
 ...
 
 "
@@ -260,16 +260,16 @@ tags:	 	%s
   (mapconcat #'(lambda (t) (format "#%s" t)) tags " "))
 
 (defun phi-md-hashtags-to-list (hashtags)
-"Return a list of (valid) tags from a HASHTAGS string. Valid tag
+  "Return a list of (valid) tags from a HASHTAGS string. Valid tag
 names conform to `phi-tag-regex'."
-(let ((start 0)
-      (tags '())
-      (hashtag-re (concat "#\\(" phi-tag-regex "\\)")))
-  (when (stringp hashtags)
-        (while (string-match hashtag-re hashtags start)
-          (add-to-list 'tags (match-string 1 hashtags) t)
-          (setq start (match-end 0))))
-  tags))
+  (let ((start 0)
+        (tags '())
+        (hashtag-re (concat "#\\(" phi-tag-regex "\\)")))
+    (when (stringp hashtags)
+      (while (string-match hashtag-re hashtags start)
+        (add-to-list 'tags (match-string 1 hashtags) t)
+        (setq start (match-end 0))))
+    tags))
 
 (defun phi-journal-header (id title tags _parent-props _extra-fields)
   (format "\
@@ -314,8 +314,8 @@ for text editors that don't identify YALM sections (e. g.
   (let ((basic (format "\
 title: %S
 id:	%s\n" title id))
-         (extra (phi--yaml-fields extra-fields))
-         (hashtags (format "tags: %s" (or (phi-md-hashtags-str tags) ""))))
+        (extra (phi--yaml-fields extra-fields))
+        (hashtags (format "tags: %s" (or (phi-md-hashtags-str tags) ""))))
     (phi--yaml-section-wrap (concat basic extra hashtags))))
 
 (defun phi-construct-breadcrumb (&optional parent)
@@ -355,16 +355,16 @@ frontmatter of BUFFER."
     ;; Find the YAML frontmatter block boundaries, or otherwise throw an error.
     (if (looking-at-p "---")
         (let* ((_ (forward-line 1))
-              (target-pos (point))
-              (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
-              (field-key-str nil)
-              (fields nil))
+               (target-pos (point))
+               (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t))
+               (field-key-str nil)
+               (fields nil))
 
           ;; Return after search-forward moved point.
           (goto-char target-pos)
 
           (if yaml-end-pos
-            ;; If YAML block is found, collect the fields
+              ;; If YAML block is found, collect the fields
               (progn
                 (while (search-forward-regexp "^\\([[:alnum:]-_]+\\):\\s-*" yaml-end-pos t)
                   (setq field-key-str (match-string-no-properties 1))
@@ -388,8 +388,8 @@ is a plist with appropriate metadata: `:description', `:id',
          (format-str (if (string= description "")
                          "%s%s[[%s]]%s"
                        "%s%s [[%s]]%s")))
-  (with-current-buffer buffer
-    (insert (format format-str link-pre description target-id link-post)))))
+    (with-current-buffer buffer
+      (insert (format format-str link-pre description target-id link-post)))))
 
 (defun phi-org-insert-link (buffer link)
   "Function to insert a link in an Org BUFFER. LINK is a plist with
@@ -437,8 +437,8 @@ the appropriate metadata : `:description', `:id', `:repository'."
     (let* ((endpos (save-excursion
                      (forward-line 12)
                      (point)))
-          (fields nil)
-          (field-key-str nil))
+           (fields nil)
+           (field-key-str nil))
       (while (search-forward-regexp "#\\+\\([[:alnum:]]+\\):\\s-*" endpos t)
         (setq field-key-str (match-string-no-properties 1))
         (add-to-list 'fields
@@ -457,14 +457,14 @@ the appropriate metadata : `:description', `:id', `:repository'."
 current date. System user name may be overriden by
 `phi-author-name'. Date format may be set with `phi-date-format',
 defaulting to ISO 8601 date."
-(let* ((author-name (or phi-author-name
-                        (user-full-name)
-                        (user-login-name)))
-       (date-format (or phi-date-format
-                        "%F"))
-       (date (format-time-string date-format)))
-  (list (cons 'author author-name)
-        (cons 'date date))))
+  (let* ((author-name (or phi-author-name
+                          (user-full-name)
+                          (user-login-name)))
+         (date-format (or phi-date-format
+                          "%F"))
+         (date (format-time-string date-format)))
+    (list (cons 'author author-name)
+          (cons 'date date))))
 
 ;; TODO: 1) implement merge with custom types; 2) change everywhere where type
 ;; props are read to get them from a merged alist.
@@ -489,7 +489,7 @@ corresponding files."
          (req-tags (alist-get 'required-tags type-props))
          (read-tags-fn (alist-get 'tag-reader-function type-props))
          (get-fields-fn (alist-get 'get-fields-function
-                                    type-props))
+                                   type-props))
          (fields (when (functionp get-fields-fn)
                    (funcall get-fields-fn buffer)))
          (field-keys (mapcar #'car fields))
@@ -621,7 +621,7 @@ with some contents."
          (transform-fields-fn (alist-get 'transform-fields-function type-props))
          (transformed-fields (append
                               (when (functionp transform-fields-fn)
-                                       (funcall transform-fields-fn input-fields))
+                                (funcall transform-fields-fn input-fields))
                               input-fields))
          (fields (cl-loop for k in extra-fields
                           collect
@@ -652,7 +652,7 @@ with some contents."
 (defun phi-prompt-for-type ()
   "Prompt user to select a note type from its description, and return the type."
   (let* ((selection (mapcar #'(lambda (x)
-                              (cons (alist-get 'description x) x))
+                                (cons (alist-get 'description x) x))
                             phi-note-types))
          (choice (completing-read "Select a note type: "
                                   selection)))
@@ -712,9 +712,9 @@ the buffer."
          (get-fields-fn (phi--type-prop 'get-fields-function type)))
     (when (functionp read-tags-fn)
       (funcall read-tags-fn (or (plist-get args :fields)
-                              (when (functionp get-fields-fn)
-                                (funcall get-fields-fn
-                                         buffer)))))))
+                                (when (functionp get-fields-fn)
+                                  (funcall get-fields-fn
+                                           buffer)))))))
 
 (defun phi-get-fields (buffer &rest args)
   "Interface for getting fields for a buffer BUFFER which may contain
@@ -748,12 +748,12 @@ Keyword arguments may override `:repository', `:type',
          (cur-props (phi-note-props buf))
          (new-buf
           (apply #'phi-new-note
-           (append args
-                   (list :repository 'current
-                         :type type
-                         :parent-props cur-props
-                         :tags cur-tags
-                         :fields cur-fields))))
+                 (append args
+                         (list :repository 'current
+                               :type type
+                               :parent-props cur-props
+                               :tags cur-tags
+                               :fields cur-fields))))
          (new-props (phi-note-props new-buf))
          (new-id (alist-get 'id new-props))
          (new-title (alist-get 'title new-props))
@@ -903,8 +903,8 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
 (defun phi-get-current-note-tlg-fields ()
   "Get the TLG fields for the current note in as plist"
   (let ((data  (list :tlg-ref (phi-get-note-field-contents phi-tlg-ref-field)
-             :tlg-section (phi-get-note-field-contents phi-tlg-section-field)
-             :tlg-line (phi-get-note-field-contents phi-tlg-line-field))))
+                     :tlg-section (phi-get-note-field-contents phi-tlg-section-field)
+                     :tlg-line (phi-get-note-field-contents phi-tlg-line-field))))
     data))
 
 ;;;###autoload
@@ -963,7 +963,7 @@ REPOSITORY"
   "Return the repository name corresponding to PATH, or `nil' if
 there's no match"
   (cl-some #'(lambda (r) (when (phi-in-repository-p path r) r))
-        (mapcar 'car phi-repository-alist)))
+           (mapcar 'car phi-repository-alist)))
 
 (defun phi-filename (id &optional repo)
   "Return the filename for note ID. If optional parameter REPO is not provided,
@@ -982,13 +982,29 @@ assume the repository for the current buffer."
       (error (format "Invalid note ID %s" id)))))
 
 ;;;###autoload
+(defun phi-get-note-body (id repo)
+  "Return the body of note `ID' in repository `REPO'"
+  (let ((file (expand-file-name (phi-filename id repo))))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (let ((content (buffer-string))
+            (yaml-end 0))
+        (if (string-match-p "^---\\s-*\\(.*?\\n\\)+---\\s-*" content)
+            (setq yaml-end (match-end 0))
+          (if (string-match-p "^...\\s-*\\(.*?\\n\\)+...\\s-*" content)
+              (setq yaml-end (match-end 0))))
+        (if (> yaml-end 0)
+            (substring content yaml-end)
+          (error "No YAML header found in the file"))))))
+
+;;;###autoload
 (defun phi-visit-parent-note ()
   "Visit the parent note"
   (interactive)
   (let ((id (phi-get-parent-note-id)))
     (if id
         (switch-to-buffer (find-file-noselect (phi-matching-file-name (phi-get-parent-note-id)
-        t)))
+                                                                      t)))
       (message "The current note has no parent!"))))
 
 (defun phi-get-next-link-at-point ()
@@ -1010,28 +1026,28 @@ assume the repository for the current buffer."
       (progn (pop-to-buffer buffer)
              (if (and phi-sidebar-persistent-window
                       (equal current-prefix-arg nil)) ; no C-u
-                      (delete-other-windows)))
-    (phi-mode))))
+                 (delete-other-windows)))
+      (phi-mode))))
 
 (defun phi-get-note-field-contents (field &optional buffer)
   "Return the specified field contents for BUFFER. If BUFFER is
 `nil', work with the current buffer."
   (let* ((buf (or buffer
-                 (current-buffer)))
-        (fields (phi-get-fields buf)))
+                  (current-buffer)))
+         (fields (phi-get-fields buf)))
     (alist-get (intern field) fields))) ;; TODO: interim solution
 
-    ;; (with-current-buffer buf
-    ;;   (save-excursion
-    ;;     (goto-char (point-min))
-    ;;     (if (looking-at-p "---") (forward-line 1))
-    ;;     (let ((target-pos (point))
-    ;;           (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
-    ;;       (goto-char target-pos)
-    ;;       (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
-    ;;                 (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
-    ;;                 (looking-at (concat ".*$")))
-    ;;           (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))))
+;; (with-current-buffer buf
+;;   (save-excursion
+;;     (goto-char (point-min))
+;;     (if (looking-at-p "---") (forward-line 1))
+;;     (let ((target-pos (point))
+;;           (yaml-end-pos (search-forward-regexp "^\\(\\.\\.\\.\\|---\\)" nil t)))
+;;       (goto-char target-pos)
+;;       (if  (and (re-search-forward (concat "^" field ":\\s-*") yaml-end-pos t)
+;;                 (not (looking-at "^\\(\\.\\.\\.\\|---\\)"))
+;;                 (looking-at (concat ".*$")))
+;;           (replace-regexp-in-string "\s+$" "" (match-string-no-properties 0))))))))
 
 (defun phi--get-tags-from-note-as-str (id)
   "Get a string of the tags from a given note `ID'"
@@ -1056,9 +1072,9 @@ assume the repository for the current buffer."
                                     :type type
                                     :fields fields)))
            (contents (list :tags (phi-md-hashtags-str (sort tags 'string<))
-                          ;; (phi-get-note-field-contents phi-tags-field)
-                          :citekey (alist-get 'citekey fields))))
-                          ;; (phi-get-note-field-contents phi-citekey-field))))
+                           ;; (phi-get-note-field-contents phi-tags-field)
+                           :citekey (alist-get 'citekey fields))))
+      ;; (phi-get-note-field-contents phi-citekey-field))))
       contents)))
 
 (defun phi--get-metadata-from-file-1 (file)
@@ -1176,13 +1192,13 @@ or otherwise it will be guessed."
   "Generate a new common note. `C-u' to create note in other window."
   (interactive)
   (let* ((title (read-string "title: " (phi-extract-title-from-body body)))
-        (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
-        (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
-        (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
-        (tlg-fields (phi-get-current-note-tlg-fields))
-        (id (phi-inc-counter))
-        (buffer nil)
-        (w nil))
+         (tags (read-string "tags: " (phi-get-note-field-contents phi-tags-field)))
+         (citekey (read-string "citekey: " (phi-get-note-field-contents phi-citekey-field)))
+         (loc (read-string "loc: " (phi-get-note-field-contents phi-loc-field)))
+         (tlg-fields (phi-get-current-note-tlg-fields))
+         (id (phi-inc-counter))
+         (buffer nil)
+         (w nil))
     (unless parent (setq parent (phi-get-current-note-id)))
     (let ((buffer (phi-create-common-note :id id :title title :parent parent :tags tags
                                           :citekey (unless (string= citekey "") citekey)
@@ -1238,7 +1254,7 @@ or otherwise it will be guessed."
 (defun phi--pandoc-cite (citekey &optional loc)
   (if (and (not (null loc)) (not (string= loc "0")) (not (string= loc "")))
       (format "[@%s, %s]" citekey loc)
-  (format "[@%s]" citekey)))
+    (format "[@%s]" citekey)))
 
 (defun phi-pp-to-pandoc-cite (str citekey &optional loc)
   (let ((found nil))
@@ -1264,8 +1280,8 @@ or otherwise it will be guessed."
         (id (phi-get-current-note-id))
         (region (filter-buffer-substring start end)))
     (let ((str (format "[[%s]] %s"
-                      id (if citekey (phi-pp-to-pandoc-cite region citekey loc) region))))
-    ;; reproduce copy-region-as-kill
+                       id (if citekey (phi-pp-to-pandoc-cite region citekey loc) region))))
+      ;; reproduce copy-region-as-kill
       (if (eq last-command 'phi-smart-copy-region)
           (kill-append str (< end beg))
         (kill-new str))))
@@ -1318,15 +1334,15 @@ or otherwise it will be guessed."
 (defun phi--grep-tag-list ()
   "Return list of tags from all notes in phi directory."
   (let* ((tags (shell-command-to-string (concat
-                                          "grep -I -ohir -e "
-                                          (shell-quote-argument
-                                           "#[[:alnum:]\\./-_]\\+" ;; TODO
-                                           )
-                                          " "
-                                          (file-name-directory
-                                           (buffer-file-name (current-buffer)))
-                                          " | sed 's/^#//' 2>/dev/null"
-                                          )))
+                                         "grep -I -ohir -e "
+                                         (shell-quote-argument
+                                          "#[[:alnum:]\\./-_]\\+" ;; TODO
+                                          )
+                                         " "
+                                         (file-name-directory
+                                          (buffer-file-name (current-buffer)))
+                                         " | sed 's/^#//' 2>/dev/null"
+                                         )))
          (tag-list (split-string tags "\n" t)))
     (delete-dups tag-list)))
 
@@ -1397,7 +1413,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (with-current-buffer buffer
     (phi-mode)
     (if (and phi-sidebar-olivetti-width (bound-and-true-p olivetti-mode))
-         (olivetti-set-width phi-sidebar-olivetti-width))
+        (olivetti-set-width phi-sidebar-olivetti-width))
     (setq buffer-face-mode-face 'phi-sidebar-face)
     (buffer-face-mode)
     (phi-buttonize-buffer))
@@ -1405,10 +1421,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun phi-sidebar-create-buffer (id)
   (let ((file (phi-matching-file-name id t)))
-        (if file
-            (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
-                                      (find-file-noselect file)))
-          (error "No matching file for note id %s" id))))
+    (if file
+        (setq phi-sidebar-buffer (phi-sidebar-adjust-buffer
+                                  (find-file-noselect file)))
+      (error "No matching file for note id %s" id))))
 
 (defun phi-sidebar-create-window (id)
   (display-buffer-in-side-window (phi-sidebar-create-buffer id)
@@ -1438,7 +1454,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (interactive)
   (if (and phi-sidebar-buffer (window-live-p (get-buffer-window phi-sidebar-buffer)))
       (progn (delete-window (get-buffer-window phi-sidebar-buffer))
-           (setq phi-sidebar-buffer nil))
+             (setq phi-sidebar-buffer nil))
     (phi-sidebar-with-parent)))
 
 ;;;###autoload
@@ -1525,8 +1541,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     (read (current-buffer))))
 
 (defun phi-load-persistent-cache ()
-    (setq phi-hash-mtimes (phi-cache--slurp (phi-cache--persistent-filename "mtimes")))
-    (setq phi-hash-contents (phi-cache--slurp (phi-cache--persistent-filename "contents"))))
+  (setq phi-hash-mtimes (phi-cache--slurp (phi-cache--persistent-filename "mtimes")))
+  (setq phi-hash-contents (phi-cache--slurp (phi-cache--persistent-filename "contents"))))
 
 (defun phi-cache-reset ()
   "Reset the notes cache."
@@ -1577,8 +1593,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
             (time-less-p mtime-cache mtime-file))
         (progn
           (mapcar #'phi-cache-file
-                (directory-files (expand-file-name dir) t
-                                 (helm-phi--extract-id-from-cadidate-re)))
+                  (directory-files (expand-file-name dir) t
+                                   (helm-phi--extract-id-from-cadidate-re)))
           (puthash (expand-file-name dir) mtime-file phi-hash-mtimes)
           (phi-persist-cache)))))
 
@@ -1609,14 +1625,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-insert-titles-and-links-action (candidate)
   "helm action to insert multiple titles and links"
   (cl-loop for cand in (helm-marked-candidates)
-        do
-        (let* ((filename (helm-phi--get-file-name cand))
-               (id (phi--get-note-id-from-file-name filename))
-               (title (phi--get-note-title-from-file-name filename)))
-          (phi-insert-link (current-buffer) (list :id id
-                                                  :description title
-                                                  :prepend "- "
-                                                  :append (newline))))))
+           do
+           (let* ((filename (helm-phi--get-file-name cand))
+                  (id (phi--get-note-id-from-file-name filename))
+                  (title (phi--get-note-title-from-file-name filename)))
+             (phi-insert-link (current-buffer) (list :id id
+                                                     :description title
+                                                     :prepend "- "
+                                                     :append (newline))))))
 
 (defun helm-phi-insert-and-assign-action (candidate)
   (string-match (helm-phi--extract-id-from-cadidate-re) candidate)
@@ -1624,10 +1640,10 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
          (this-id (phi-get-current-note-id))
          (buffer (find-file-noselect (phi-matching-file-name id))))
     (with-current-buffer buffer
-        (let* ((current-projects (phi-get-note-field-contents phi-project-field))
-               (project-link (if current-projects ;; preppend to existing project list, if needed
+      (let* ((current-projects (phi-get-note-field-contents phi-project-field))
+             (project-link (if current-projects ;; preppend to existing project list, if needed
                                (concat (phi-id-to-wikilink this-id) " " current-projects) (phi-id-to-wikilink this-id))))
-          (phi-set-note-field-contents phi-project-field project-link))))
+        (phi-set-note-field-contents phi-project-field project-link))))
   (or (phi-has-tag phi-project-tag) ;; add project tag to current note, if needed
       (phi-set-note-field-contents phi-tags-field (concat phi-hashtag-symbol phi-project-tag
                                                           " " (phi-get-note-field-contents phi-tags-field))))
@@ -1651,9 +1667,9 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi-source-data-unsorted (&optional path)
   (mapcar #'car
-       (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
-                                       t
-                                       (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)))
+          (directory-files-and-attributes (expand-file-name (or path (phi-notes-path)))
+                                          t
+                                          (concat "^" phi-id-regex "\s+\\(.+\\)\\.\\(markdown\\|txt\\|org\\|taskpaper\\|md\\)$") t)))
 (defun helm-phi-source-data-item (file)
   (let* ((contents (phi-cache--get-contents file))
          (tags (plist-get contents :tags))
@@ -1673,7 +1689,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 
 (defun helm-phi-source-data-with-tags (&optional path)
   (phi-cache-refresh-dir-maybe (or path (phi-notes-path)))
-;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
+  ;;  (when path (setq default-directory path)) - desnecessário se source data trouxer caminhos completos
   (mapcar #'helm-phi-source-data-item (helm-phi-source-data-sorted path)))
 
 (defun helm-phi-wiki-linked-action (file)
@@ -1716,8 +1732,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
     collect (helm-build-sync-source (car repo)
               :candidates  ((lambda (x) (helm-phi-source-data-with-tags (nth 1 x))) repo)
               :candidate-transformer 'helm-phi-candidates-transformer
-;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
-;;              :keymap helm-find-files-map ;; FIXME
+              ;;              :filtered-candidate-transformer 'helm-phi-filtered-candidate-transformer
+              ;;              :keymap helm-find-files-map ;; FIXME
               :action (helm-phi--build-actions)))
    (list
     (helm-build-dummy-source "Create a new note"
@@ -1754,7 +1770,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-filtered-candidate-transformer (candidates source)
   "Not working -- why?"
   (sort (copy-seq candidates) (lambda (x y)
-                     (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
+                                (time-less-p (phi-cache-get-mtime (cdr x)) (phi-cache-get-mtime (cdr y))))))
 
 (defun phi--grep-file-list (str)
   "Return a list of files containing regexp STR."
@@ -1807,7 +1823,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (require 'helm-source)
   (interactive)
   (helm :sources
-         (helm-phi--build-sources)
+        (helm-phi--build-sources)
         :buffer "*helm phi notes*"
         :input input))
 
