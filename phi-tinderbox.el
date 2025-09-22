@@ -1,4 +1,4 @@
-;;; phi-tinderbox.el - phi-notes integration with Tinderbox -*- lexical-binding:t -*-
+;;; phi-tinderbox.el -- phi-notes integration with Tinderbox -*- lexical-binding:t -*-
 ;;; 	by Bruno L. Conte, 2022
 
 (require 'phi-notes)
