@@ -29,12 +29,14 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 embed_model = OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL)
 
 # Metadata fields
-METADATA_FIELDS = ['id', 'title', 'author', 'date', 'citekey', 'loc', 'ref_tlg', 'section', 'line', 'uplink', 'proj', 'event', 'tags']
+METADATA_FIELDS = ['id', 'title', 'author', 'date', 'citekey', 'loc', 'ref_tlg', 'section',
+                   'line', 'uplink', 'proj', 'event', 'tags']
 
 class YAMLMetadataExtractor(TransformComponent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        yaml.add_constructor("tag:yaml.org,2002:timestamp", self.date_as_string, Loader=yaml.SafeLoader)
+        yaml.add_constructor("tag:yaml.org,2002:timestamp", self.date_as_string,
+                             Loader=yaml.SafeLoader)
 
     def date_as_string(self, loader, node):
         return loader.construct_scalar(node)
@@ -83,10 +85,16 @@ class YAMLMetadataExtractor(TransformComponent):
         return {key: input_dict[key] for key in METADATA_FIELDS if key in input_dict}
 
     def transform(self, document: Document, **kwargs) -> Document:
+        print(f"DEBUG: Processing headers from {document.doc_id}")
         metadata = self.filter_metadata(self.extract_yaml_header(document.text))
         if metadata:
             document.metadata.update(metadata)
-            document.text = re.sub(r'^(---|\.\.\.)(.*?)(---|\.\.\.)(\r|\n|$)', '', document.text, flags=re.DOTALL).strip()
+            try:
+                document.text = re.sub(r'^(---|\.\.\.)(.*?)(---|\.\.\.)(\r|\n|$)', '',
+                                       document.text, flags=re.DOTALL).strip()
+            except AttributeError: ## TODO: could do better when there's no YAML header
+                print(f"WARNING: Could not process YAML header in {document.doc_id}")
+                return document
         return document
 
     def __call__(self, nodes, **kwargs) -> Document:
@@ -184,8 +192,10 @@ class HeadingExtractor(TransformComponent):
 @click.argument('collection_name', required=True, type=str)
 @click.option('--source', required=True, help='Source path for note repository')
 @click.option('--bibliography', required=True, help='Path for Bib(La)TeX .bib file') # TODO: poderia aceitar False
-@click.option('--purge', is_flag=True, help='Flag to purge the database from documents corresponding to no longer existant files.') # TODO: implementar
-def ingest(collection_name, source, bibliography, purge):
+@click.option('--num_workers', required=False, help='Number of simultaneous workers', default=os.cpu_count())
+@click.option('--purge', is_flag=True, help='Flag to purge the database from documents ' +
+              'corresponding to no longer existant files.') # TODO: implementar
+def ingest(collection_name, source, bibliography, num_workers, purge):
     """CLI tool to create or update chromadb ingesting the phi-notes"""
 
     print(f"Updating \'{collection_name}\'...")
@@ -203,16 +213,30 @@ def ingest(collection_name, source, bibliography, purge):
         OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL),
     ]
 
-    docstore = SimpleDocumentStore.from_persist_dir(persist_dir=DOCSTORES_PATH)
+    if not os.path.exists(DOCSTORES_PATH):
+        new_storage_context = StorageContext.from_defaults(
+            docstore=SimpleDocumentStore())
+        new_storage_context.persist(persist_dir=DOCSTORES_PATH)
+        docstore = new_storage_context.docstore
+    else:
+        docstore = SimpleDocumentStore.from_persist_dir(persist_dir=DOCSTORES_PATH)
+
     pipeline = IngestionPipeline(transformations=transformations,
                                  vector_store=vector_store,
                                  docstore=docstore)
 
+    print(f"Ingesting from {source}")
+
     the_documents = SimpleDirectoryReader(input_dir=source,
                                           required_exts=EXTENSIONS,
-                                          filename_as_id=True
+                                          filename_as_id=True,
+                                          # num_files_limit=1024,
                                           ).load_data()
-    nodes = pipeline.run(documents=the_documents, num_workers=1)
+
+    print(f"This is the first document: {the_documents[0]}")
+
+    
+    nodes = pipeline.run(documents=the_documents, num_workers=num_workers)
     docstore.persist(persist_path=f"{DOCSTORES_PATH}/docstore.json")
 
     print(f"Ingested {len(nodes)} Nodes")
