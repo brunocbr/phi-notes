@@ -989,9 +989,9 @@ assume the repository for the current buffer."
       (insert-file-contents file)
       (let ((content (buffer-string))
             (yaml-end 0))
-        (if (string-match-p "^---\\s-*\\(.*?\\n\\)+---\\s-*" content)
+        (if (string-match "^---\\s-*\\(.*?\\n\\)+---\\s-*" content)
             (setq yaml-end (match-end 0))
-          (if (string-match-p "^...\\s-*\\(.*?\\n\\)+...\\s-*" content)
+          (if (string-match "^---\\s-*\\(.*?\\n\\)+...\\s-*" content)
               (setq yaml-end (match-end 0))))
         (if (> yaml-end 0)
             (substring content yaml-end)
@@ -1649,6 +1649,12 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                                           " " (phi-get-note-field-contents phi-tags-field))))
   (helm-phi-insert-title-and-link-action candidate))
 
+(defun helm-phi-insert-body (candidate)
+  (let* ((filename (helm-phi--get-file-name candidate))
+         (repo (phi-repository-for-path filename))
+         (id (phi--get-note-id-from-file-name filename)))
+    (insert (phi-get-note-body id repo))))
+
 (defun phi--pop-to-buffer-maybe (buffer)
   "Pop to buffer if interaction is modified with C-u"
   (if (equal current-prefix-arg nil) ; no C-u
@@ -1702,7 +1708,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (append
                                           (list file) ;; include the note itself
                                           (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
-                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                                                                   (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
                      :candidate-transformer 'helm-phi-candidates-transformer
                      :action (helm-phi--build-actions)))
                   (helm-phi--build-sources))
@@ -1718,6 +1724,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                      'helm-phi-insert-titles-and-links-action
                      "Insert & assign to this project"
                      'helm-phi-insert-and-assign-action
+                     "Insert note contents"
+                     'helm-phi-insert-body
                      "Navigate wiki linked notes"
                      'helm-phi-wiki-linked-action))
 
