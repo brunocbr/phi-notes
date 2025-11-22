@@ -9,7 +9,10 @@ import chromadb.utils.embedding_functions as embedding_functions
 
 # Set up the OpenAI API key and chromadb path
 API_KEY = os.getenv("OPENAI_API_KEY")
-CHROMADB_PATH = os.getenv("CHROMADB_PATH", "./chroma_db")  # Default to local path
+
+CHROMADB_PATH = os.getenv("CHROMADB_PATH", False)  # Use HTTP client by default
+CHROMADB_HOST = os.getenv("CHROMADB_HOST", "localhost")
+CHROMADB_PORT = os.getenv("CHROMADB_HOST", "8000")
 EMBEDDING_MODEL="text-embedding-3-small"
 
 # Initialize the embedding function
@@ -27,7 +30,10 @@ def query(collection_name, n_results, embedding, list_collections):
     """CLI tool to query a chromadb collection using input from STDIN."""
 
     # Initialize the chromadb client and get the specified collection
-    client = chromadb.PersistentClient(path=CHROMADB_PATH)
+    if CHROMADB_PATH:
+        client = chromadb.PersistentClient(path=CHROMADB_PATH)
+    else:
+        client = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
 
     # Check if user requested to list collections
     if list_collections:

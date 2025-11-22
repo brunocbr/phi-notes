@@ -29,8 +29,13 @@
   :type 'string
   :group 'phi-brain)
 
-(defcustom phi-brain-chromadb-path "/opt/chroma_db"
-  "Path to the ChromaDB database."
+(defcustom phi-brain-chromadb-host "localhost"
+  "ChromaDB host address"
+  :type 'string
+  :group 'phi-brain)
+
+(defcustom phi-brain-chromadb-port "8000"
+  "ChromaDB host port"
   :type 'string
   :group 'phi-brain)
 
@@ -85,6 +90,11 @@ Otherwise, fetch from OpenAI's API and cache the result using an MD5 hash as the
       (buffer-substring-no-properties (region-beginning) (region-end))
     (buffer-substring-no-properties (point-min) (point-max))))
 
+(defun phi-brain-set-environment ()
+  "Set enviroment variables for calling the Python script"
+  (setenv "CHROMADB_HOST" phi-brain-chromadb-host)
+  (setenv "CHROMADB_PORT" phi-brain-chromadb-port))
+
 ;;;###autoload
 (defun phi-brain-query (collection-name query-text &optional n-results)
   "Query ChromaDB using COLLECTION-NAME with optional N-RESULTS.
@@ -97,8 +107,9 @@ Returns parsed JSON results as a list of alists."
                         collection-name
                         "--embedding"
                         (format "--n_results=%d" n-results))))
-    ;; Set the CHROMADB_PATH environment variable
-    (setenv "CHROMADB_PATH" phi-brain-chromadb-path)
+
+    (phi-brain-set-environment)
+
     (message (format "Querying %s" collection-name))
     ;; Call the Python process with query-text as input
     (with-temp-buffer
@@ -122,7 +133,7 @@ Returns parsed JSON results as a list of alists."
 if the list is not already cached."
   (or phi-brain-collection-list-cache
       (let* ((output (progn
-                       (setenv "CHROMADB_PATH" phi-brain-chromadb-path)
+                       (phi-brain-set-environment)
                        (shell-command-to-string
                         (format "%s --list-collections" phi-brain-python-script))))
              (collections (json-read-from-string output)))
