@@ -137,15 +137,17 @@ Returns parsed JSON results as a list of alists."
   "Run the ChromaDB script to obtain and return the list of collections as a list,
 if the list is not already cached."
   (or phi-brain-collection-list-cache
-      (let* ((output (progn
-                       (phi-brain-set-environment)
-                       (shell-command-to-string
-                        (format "%s %s --list-collections"
-                                phi-brain-python-path
-                                phi-brain-python-script))))
-             (collections (json-read-from-string output)))
-        (setq phi-brain-collection-list-cache collections)
-        collections)))
+      (progn
+        (phi-brain-set-environment)
+        (let* ((output (progn
+                         (phi-brain-set-environment)
+                         (shell-command-to-string
+                          (format "%s %s --list-collections"
+                                  phi-brain-python-path
+                                  phi-brain-python-script))))
+               (collections (json-read-from-string output)))
+          (setq phi-brain-collection-list-cache collections)
+          collections))))
 
 (defun phi-brain--clean-string (str)
   "Remove newlines, carriage returns, and other stuff from STR."
