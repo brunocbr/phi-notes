@@ -29,6 +29,11 @@
   :type 'string
   :group 'phi-brain)
 
+(defcustom phi-brain-python-path "/usr/bin/python3"
+  "Path to Python."
+  :type 'string
+  :group 'phi-brain)
+
 (defcustom phi-brain-chromadb-host "localhost"
   "ChromaDB host address"
   :type 'string
@@ -103,16 +108,16 @@ Returns parsed JSON results as a list of alists."
          (output-buffer (generate-new-buffer "*phi-brain-output*"))
          (embedding (phi-brain-get-or-cache-text-embedding query-text))
          (embedding-json (json-encode embedding))
-         (command (list phi-brain-python-script
+         (command (list phi-brain-python-path
+                        phi-brain-python-script
                         collection-name
                         "--embedding"
                         (format "--n_results=%d" n-results))))
 
-    (phi-brain-set-environment)
-
-    (message (format "Querying %s" collection-name))
+    (message (format "Querying %s\n" collection-name))
     ;; Call the Python process with query-text as input
     (with-temp-buffer
+      (phi-brain-set-environment)
       (insert embedding-json)
       (apply 'call-process-region
              (point-min) (point-max) ;; region to send as stdin
@@ -135,7 +140,9 @@ if the list is not already cached."
       (let* ((output (progn
                        (phi-brain-set-environment)
                        (shell-command-to-string
-                        (format "%s --list-collections" phi-brain-python-script))))
+                        (format "%s %s --list-collections"
+                                phi-brain-python-path
+                                phi-brain-python-script))))
              (collections (json-read-from-string output)))
         (setq phi-brain-collection-list-cache collections)
         collections)))

@@ -1,4 +1,4 @@
-#!env python3
+#!env python
 
 import os
 import json
@@ -12,7 +12,7 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 
 CHROMADB_PATH = os.getenv("CHROMADB_PATH", False)  # Use HTTP client by default
 CHROMADB_HOST = os.getenv("CHROMADB_HOST", "localhost")
-CHROMADB_PORT = os.getenv("CHROMADB_HOST", "8000")
+CHROMADB_PORT = os.getenv("CHROMADB_PORT", "8000")
 EMBEDDING_MODEL="text-embedding-3-small"
 
 # Initialize the embedding function
