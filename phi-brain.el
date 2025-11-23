@@ -49,6 +49,14 @@
   :type 'string
   :group 'phi-brain)
 
+(defcustom phi-brain-path-transformations-alist nil
+  "An alist of regex and transformation pairs for path manipulation.
+            Each pair consists of a regex as the car and a replacement string
+            as the cdr."
+  :type '(repeat (cons (string :tag "Regular Expression")
+                       (string :tag "Replacement")))
+  :group 'phi-brain)
+
 (defvar phi-brain-text-embedding-cache (make-hash-table :test 'equal)
   "Hash table to cache text embeddings using MD5 hashes as keys.")
 
@@ -163,6 +171,16 @@ if the list is not already cached."
 
 ;; (phi-brain--clean-string "### aa [[1234]] vv")
 
+(defun phi-brain-transform-path (path)
+  "Transform the given PATH using transformations defined in
+            `phi-brain-path-transformations-alist`."
+  (dolist (transformation phi-brain-path-transformations-alist)
+    (let ((regex (car transformation))
+          (replacement (cdr transformation)))
+      (setq path (replace-regexp-in-string regex replacement
+                                           path))))
+  path)
+
 (defun phi-brain-format-result (result)
   "Format a RESULT for display in Helm.
 Displays the filename (without extension), beginning of document, and vector distance."
@@ -248,7 +266,10 @@ highlighting it momentarily."
     :candidate-transformer (lambda (candidates) (mapcar #'phi-brain-format-result candidates))
     :action '(("Jump to text in file" .
                (lambda (result) (phi-brain-jump-to-text-in-file
-                                 (alist-get 'file_path (alist-get 'metadata result))
+                                 (->> result
+                                      (alist-get 'metadata)
+                                      (alist-get 'file_path)
+                                      (phi-brain-transform-path))
                                  (alist-get 'document result))))
               ("Kill titles and wikilinks" .
                (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))))
