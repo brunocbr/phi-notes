@@ -17,7 +17,9 @@ from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.storage.docstore import SimpleDocumentStore
 
 # Configuration
-CHROMADB_PATH = os.getenv("CHROMADB_PATH")
+CHROMADB_PATH = os.getenv("CHROMADB_PATH", False)
+CHROMADB_HOST = os.getenv("CHROMADB_HOST", "localhost")
+CHROMADB_PORT = os.getenv("CHROMADB_PORT", "8000")
 DOCSTORES_PATH = os.getenv("DOCSTORES_PATH")
 
 EXTENSIONS = [".markdown", ".md", ".txt", ".org", ".pl"]
@@ -200,7 +202,11 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
 
     print(f"Updating \'{collection_name}\'...")
     
-    db = chromadb.PersistentClient(path=CHROMADB_PATH)
+    if CHROMADB_PATH:
+        db = chromadb.PersistentClient(path=CHROMADB_PATH)
+    else:
+        db = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
+
     chroma_collection = db.get_or_create_collection(collection_name)
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
