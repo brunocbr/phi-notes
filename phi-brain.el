@@ -24,16 +24,6 @@
   :group 'tools
   :prefix "phi-brain")
 
-(defcustom phi-brain-python-script "phi_brain_query.py"
-  "Path to the Python script for querying ChromaDB."
-  :type 'string
-  :group 'phi-brain)
-
-(defcustom phi-brain-python-path "/usr/bin/python3"
-  "Path to Python."
-  :type 'string
-  :group 'phi-brain)
-
 (defcustom phi-brain-chromadb-host "localhost"
   "ChromaDB host address"
   :type 'string
@@ -103,59 +93,57 @@ Otherwise, fetch from OpenAI's API and cache the result using an MD5 hash as the
       (buffer-substring-no-properties (region-beginning) (region-end))
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun phi-brain-set-environment ()
-  "Set enviroment variables for calling the Python script"
-  (setenv "CHROMADB_HOST" phi-brain-chromadb-host)
-  (setenv "CHROMADB_PORT" phi-brain-chromadb-port))
-
 ;;;###autoload
-(defun phi-brain-query (collection-name query-text &optional n-results)
-  "Query ChromaDB using COLLECTION-NAME with optional N-RESULTS.
+(defun phi-brain-query (collection query-text &optional n-results)
+  "Query ChromaDB using COLLECTION, a cons cell of NAME . ID, with optional N-RESULTS.
 Returns parsed JSON results as a list of alists."
   (let* ((n-results (or n-results 5))
-         (output-buffer (generate-new-buffer "*phi-brain-output*"))
          (embedding (phi-brain-get-or-cache-text-embedding query-text))
-         (embedding-json (json-encode embedding))
-         (command (list phi-brain-python-path
-                        phi-brain-python-script
-                        collection-name
-                        "--embedding"
-                        (format "--n_results=%d" n-results))))
+         (api-url (concat
+                   "http://" phi-brain-chromadb-host ":" phi-brain-chromadb-port
+                   "/api/v2/tenants/default_tenant/databases/default_database/collections/"
+                   (cdr collection) "/query"))
+         (url-request-method "POST")
+         (url-request-extra-headers
+          `(("accept" . "application/json")
+            ("Content-Type" . "application/json")))
+         (url-request-data
+          (encode-coding-string
+           (json-encode `(("include" . ("distances" "metadatas" "documents"))
+                          ("n_results" . ,n-results)
+                          ("query_embeddings" . (,embedding))))
+           'utf-8)))
+    (message (format "Querying %s\n" (car collection)))
+    (let* ((result
+            (with-current-buffer (url-retrieve-synchronously api-url)
+              (goto-char url-http-end-of-headers)
+              (json-parse-buffer :object-type 'alist)))
+           (ids (seq-elt (cdr (assoc 'ids result)) 0))
+           (documents (seq-elt (cdr (assoc 'documents result)) 0))
+           (metadatas (seq-elt (cdr (assoc 'metadatas result)) 0))
+           (distances (seq-elt (cdr (assoc 'distances result)) 0)))
+      (seq-mapn (lambda (id document metadata distance)
+                  `((id . ,id) (document . ,document) (metadata . ,metadata) (distance . ,distance)))
+                ids documents metadatas distances))))
 
-    (message (format "Querying %s\n" collection-name))
-    ;; Call the Python process with query-text as input
-    (with-temp-buffer
-      (phi-brain-set-environment)
-      (insert embedding-json)
-      (apply 'call-process-region
-             (point-min) (point-max) ;; region to send as stdin
-             (car command)           ;; program to run
-             nil                     ;; don't replace buffer
-             output-buffer           ;; where to store output
-             nil                     ;; no display
-             (cdr command)))         ;; additional arguments
-    ;; Parse the JSON output from the output buffer
-    (with-current-buffer output-buffer
-      (goto-char (point-min))
-      (let ((json-object (json-parse-buffer :object-type 'alist)))
-        (kill-buffer output-buffer)
-        json-object))))
 
 (defun phi-brain-get-collections ()
-  "Run the ChromaDB script to obtain and return the list of collections as a list,
-if the list is not already cached."
-  (or phi-brain-collection-list-cache
-      (progn
-        (phi-brain-set-environment)
-        (let* ((output (progn
-                         (phi-brain-set-environment)
-                         (shell-command-to-string
-                          (format "%s %s --list-collections"
-                                  phi-brain-python-path
-                                  phi-brain-python-script))))
-               (collections (json-read-from-string output)))
-          (setq phi-brain-collection-list-cache collections)
-          collections))))
+  "Request from the ChromaDB server and return the list of collections as a list"
+  (let* ((api-url (concat
+                   "http://" phi-brain-chromadb-host ":" phi-brain-chromadb-port
+                   "/api/v2/tenants/default_tenant/databases/default_database/collections"))
+         (response (with-current-buffer (url-retrieve-synchronously api-url)
+                     (goto-char url-http-end-of-headers)
+                     (json-read)))
+         (collections (mapcar (lambda (entry)
+                                (cons (cdr (assoc 'name entry))
+                                      (cdr (assoc 'id entry))))
+                              response)))
+    collections))
+
+
+;; (phi-brain-get-collections)
+
 
 (defun phi-brain--clean-string (str)
   "Remove newlines, carriage returns, and other stuff from STR."
@@ -280,10 +268,12 @@ highlighting it momentarily."
  COLLECTION-NAME with optional N-RESULTS."
   (interactive)
   (let* ((query-text (or text (phi-brain-get-text)))
-         (col (or collection-name
-                  (completing-read "Select a collection : "
-                                   (mapcar #'identity (phi-brain-get-collections))
-                                   nil t nil 'phi-brain-collection-completion-history)))
+         (collections (phi-brain-get-collections))
+         (col (assoc (or collection-name
+                         (completing-read "Select a collection : "
+                                          (mapcar #'identity collections)
+                                          nil t nil 'phi-brain-collection-completion-history))
+                     collections))
          (results (mapcar #'identity (phi-brain-query col query-text (or n-results 100)))))
     (helm :sources (phi-brain-helm-source results)
           :buffer "*helm phi-brain results*")))
