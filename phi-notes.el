@@ -213,6 +213,13 @@ tags:   %s
   :group 'phi)
 
 
+(defcustom phi-file-extensions
+  '("markdown" "md" "org" "txt" "pl")
+  "List of accepted file extensions for phi."
+  :type '(repeat string)
+  :group 'phi)
+
+
 (defcustom phi-annotation-tag "ƒ"
   "Tag for the identification of annotation notes"
   :type 'string
@@ -920,11 +927,21 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
         (cdr (assoc (directory-file-name (file-name-directory (expand-file-name filename)))
                     repo-dirs)))))
 
+(defun phi-match-extension (path)
+  "Return the file extension if PATH has an extension in `phi-file-extensions`."
+  (let ((ext (file-name-extension path)))
+    (when ext
+      (member (downcase ext) phi-file-extensions))))
+
+
 (defun phi-matching-file-name (id &optional usecontext path)
   "Return the first match of a file name starting with ID.
-
 If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
-  (nth 0 (file-name-all-completions id (or path (phi-notes-path usecontext))))) ;; blank for current dir instead of phi-notes-path
+  (->> (or path (phi-notes-path usecontext))
+       (file-name-all-completions)
+       (cl-remove-if-not #'phi-match-extension)
+       (nth 0)))
+
 
 (defun phi-wiki-link-re ()
   (concat phi-link-left-bracket-symbol-re
@@ -1708,7 +1725,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (append
                                           (list file) ;; include the note itself
                                           (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
-                                                                   (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
                      :candidate-transformer 'helm-phi-candidates-transformer
                      :action (helm-phi--build-actions)))
                   (helm-phi--build-sources))
