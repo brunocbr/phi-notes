@@ -938,7 +938,7 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Return the first match of a file name starting with ID.
 If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
   (->> (or path (phi-notes-path usecontext))
-       (file-name-all-completions)
+       (file-name-all-completions (format "%s " id))
        (cl-remove-if-not #'phi-match-extension)
        (nth 0)))
 
