@@ -1311,12 +1311,15 @@ or otherwise it will be guessed."
   (phi--search-forward-pp)
   (phi-smart-copy-region (- (match-beginning 1) 1) (+ (match-end 2) 1)))
 
+(defun phi-get-current-note-url ()
+  (format "%s://%s" phi-url-protocol (phi-get-current-note-id)))
+
 (defun phi-copy-wikilink ()
   "Copy a wikilink to the current note to the kill buffer. C-u to copy URL with `phi-url-protocol'."
   (interactive)
   (if (equal current-prefix-arg nil)
       (kill-new (format "[[%s]]" (phi-get-current-note-id)))
-    (kill-new (format "%s://%s" phi-url-protocol (phi-get-current-note-id)))))
+    (kill-new (phi-get-current-note-url))))
 
 (defun phi-remove-frontmatter (str)
   (with-temp-buffer
