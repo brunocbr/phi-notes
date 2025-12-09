@@ -58,6 +58,8 @@
   (let ((sanitized-line line))
     ;; Remove Markdown list markers
     (setq sanitized-line (replace-regexp-in-string "^\\s-*[-+*]\\s-*" "" sanitized-line))
+    (setq sanitized-line (replace-regexp-in-string "^\\s-*\\[\\s-*\\]\\s-*" "" sanitized-line)) ; Remove unmarked tasks
+    (setq sanitized-line (replace-regexp-in-string "^\\s-*\\[X]\\s-*" "" sanitized-line)) ; Remove marked tasks
     ;; Remove tags
     (setq sanitized-line (replace-regexp-in-string "#[A-Za-z0-9_]+" "" sanitized-line))
     ;; Trim whitespace
