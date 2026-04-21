@@ -213,12 +213,24 @@ tags:   %s
   :group 'phi)
 
 
+
+
 (defcustom phi-file-extensions
   '("markdown" "md" "org" "txt" "pl")
   "List of accepted file extensions for phi."
   :type '(repeat string)
   :group 'phi)
 
+(defcustom phi-helm-actions
+  '(("Open note" . helm-phi-find-note-action)
+    ("Insert link to note" . helm-ag-phi-insert-link-action)
+    ("Insert title(s) & link(s)" . helm-phi-insert-titles-and-links-action)
+    ("Insert & assign to this project" . helm-phi-insert-and-assign-action)
+    ("Insert note contents" . helm-phi-insert-body)
+    ("Navigate wiki linked notes" . helm-phi-wiki-linked-action))
+  "Actions for phi Helm."
+  :type '(repeat (cons string function))
+  :group 'phi)
 
 (defcustom phi-annotation-tag "ƒ"
   "Tag for the identification of annotation notes"
@@ -1728,26 +1740,29 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (append
                                           (list file) ;; include the note itself
                                           (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
-                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                                                                   (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
                      :candidate-transformer 'helm-phi-candidates-transformer
                      :action (helm-phi--build-actions)))
                   (helm-phi--build-sources))
         :buffer (format "*helm phi wiki links in %s*" (file-name-base file))))
 
 
+;; (defun helm-phi--build-actions ()
+;;   (helm-make-actions "Open note"
+;;                      'helm-phi-find-note-action
+;;                      "Insert link to note"
+;;                      'helm-ag-phi-insert-link-action
+;;                      "Insert title(s) & link(s)"
+;;                      'helm-phi-insert-titles-and-links-action
+;;                      "Insert & assign to this project"
+;;                      'helm-phi-insert-and-assign-action
+;;                      "Insert note contents"
+;;                      'helm-phi-insert-body
+;;                      "Navigate wiki linked notes"
+;;                      'helm-phi-wiki-linked-action))
+
 (defun helm-phi--build-actions ()
-  (helm-make-actions "Open note"
-                     'helm-phi-find-note-action
-                     "Insert link to note"
-                     'helm-ag-phi-insert-link-action
-                     "Insert title(s) & link(s)"
-                     'helm-phi-insert-titles-and-links-action
-                     "Insert & assign to this project"
-                     'helm-phi-insert-and-assign-action
-                     "Insert note contents"
-                     'helm-phi-insert-body
-                     "Navigate wiki linked notes"
-                     'helm-phi-wiki-linked-action))
+  phi-helm-actions)
 
 (defun helm-phi-new-note (candidate)
   (phi-new-note :title candidate))
