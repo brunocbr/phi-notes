@@ -47,6 +47,17 @@
                        (string :tag "Replacement")))
   :group 'phi-brain)
 
+(defcustom phi-brain-helm-actions
+  '(("Jump to text in file" .
+     (lambda (result) (phi-brain-jump-to-text-in-file
+                  (phi-brain-helm-get-path result)
+                  (alist-get 'document result))))
+    ("Kill titles and wikilinks" .
+     (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))
+  "Actions for phi-brain Helm."
+  :type '(repeat (cons string function))
+  :group 'phi-brain)
+
 (defvar phi-brain-text-embedding-cache (make-hash-table :test 'equal)
   "Hash table to cache text embeddings using MD5 hashes as keys.")
 
@@ -212,6 +223,12 @@ Displays the filename (without extension), beginning of document, and vector dis
       (propertize distance 'face 'font-lock-keyword-face))
      result)))
 
+(defun phi-brain-helm-get-path (result)
+  (->> result
+       (alist-get 'metadata)
+       (alist-get 'file_path)
+       (phi-brain-transform-path)))
+
 (defun phi-brain-jump-to-text-in-file (file-name text)
   "Open FILE-NAME and jump to the first occurrence of TEXT,
 highlighting it momentarily."
@@ -252,15 +269,7 @@ highlighting it momentarily."
   (helm-build-sync-source "ChromaDB Results"
     :candidates results
     :candidate-transformer (lambda (candidates) (mapcar #'phi-brain-format-result candidates))
-    :action '(("Jump to text in file" .
-               (lambda (result) (phi-brain-jump-to-text-in-file
-                                 (->> result
-                                      (alist-get 'metadata)
-                                      (alist-get 'file_path)
-                                      (phi-brain-transform-path))
-                                 (alist-get 'document result))))
-              ("Kill titles and wikilinks" .
-               (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))))
+    :action phi-brain-helm-actions))
 
 ;;;###autoload
 (defun phi-brain-helm-search (&optional text collection-name n-results)
