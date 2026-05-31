@@ -537,8 +537,8 @@ map from more to less specific types)."
 (defun phi-note-props (buffer)
   "Return alist of basic note properties for BUFFER."
   (let* ((fn (buffer-file-name buffer))
-         (id (phi--get-note-id-from-file-name fn))
-         (title (phi--get-note-title-from-file-name fn)))
+         (id (phi-get-note-id-from-file-name fn))
+         (title (phi-get-note-title-from-file-name fn)))
     (list (cons 'id id)
           (cons 'title title))))
 
@@ -900,24 +900,26 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Return a wikilink for the given `id'"
   (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
 
-(defun phi--get-note-id-from-file-name (filename)
-  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
-    (when (string-match (concat "^" phi-id-regex) fn)
-      (match-string 0 fn))))
+(defun phi-get-note-id-from-file-name (filename)
+  (when filename
+    (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+      (when (string-match (concat "^" phi-id-regex) fn)
+        (match-string 0 fn)))))
 
-(defun phi--get-note-title-from-file-name (filename)
-  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
-    (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") fn)
-        (match-string-no-properties 2 fn))))
+(defun phi-get-note-title-from-file-name (filename)
+  (when filename
+    (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+      (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") fn)
+          (match-string-no-properties 2 fn)))))
 
 (defun phi-get-current-note-id ()
   "Get the current note id"
   (interactive)
-  (phi--get-note-id-from-file-name buffer-file-name))
+  (phi-get-note-id-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-title ()
   "Get current note title from its filename"
-  (phi--get-note-title-from-file-name buffer-file-name))
+  (phi-get-note-title-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-tlg-fields ()
   "Get the TLG fields for the current note in as plist"
@@ -1644,14 +1646,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for cand in (helm-marked-candidates)
            do
            (let* ((filename (helm-phi--get-file-name cand))
-                  (id (phi--get-note-id-from-file-name filename)))
+                  (id (phi-get-note-id-from-file-name filename)))
              (phi-insert-link (current-buffer) (list :id id
                                                      :append " ")))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
   (let ((filename (helm-phi--get-file-name candidate))
-        (id (phi--get-note-id-from-file-name filename))
-        (title (phi--get-note-title-from-file-name filename)))
+        (id (phi-get-note-id-from-file-name filename))
+        (title (phi-get-note-title-from-file-name filename)))
     (phi-insert-link (current-buffer) (list :id id :description title))))
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
@@ -1659,8 +1661,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for cand in (helm-marked-candidates)
            do
            (let* ((filename (helm-phi--get-file-name cand))
-                  (id (phi--get-note-id-from-file-name filename))
-                  (title (phi--get-note-title-from-file-name filename)))
+                  (id (phi-get-note-id-from-file-name filename))
+                  (title (phi-get-note-title-from-file-name filename)))
              (phi-insert-link (current-buffer) (list :id id
                                                      :description title
                                                      :prepend "- "
@@ -1684,7 +1686,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-insert-body (candidate)
   (let* ((filename (helm-phi--get-file-name candidate))
          (repo (phi-repository-for-path filename))
-         (id (phi--get-note-id-from-file-name filename)))
+         (id (phi-get-note-id-from-file-name filename)))
     (insert (phi-get-note-body id repo))))
 
 (defun phi--pop-to-buffer-maybe (buffer)
@@ -1740,7 +1742,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (append
                                           (list file) ;; include the note itself
                                           (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
-                                                                   (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
                      :candidate-transformer 'helm-phi-candidates-transformer
                      :action (helm-phi--build-actions)))
                   (helm-phi--build-sources))
