@@ -13,8 +13,9 @@ from llama_index.core.schema import TransformComponent
 from llama_index.core.node_parser import TextSplitter, SentenceSplitter
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.ingestion.pipeline import IngestionPipeline, DocstoreStrategy
 from llama_index.core.storage.docstore import SimpleDocumentStore
+
 
 # Configuration
 CHROMADB_PATH = os.getenv("CHROMADB_PATH", False)
@@ -144,7 +145,7 @@ class BibliographyQuoter(TransformComponent):
 class MarkdownTextSplitter(TextSplitter):
     chunk_size: int = None
 
-    def __init__(self, chunk_size=512):
+    def __init__(self, chunk_size=1500):
         super().__init__()
         self.chunk_size = chunk_size
 
@@ -212,41 +213,75 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
 
     transformations = [
         YAMLMetadataExtractor(),
-        BibliographyQuoter(bib_file_path=bibliography),
+#        BibliographyQuoter(bib_file_path=bibliography),
         MarkdownTextSplitter(),
         HeadingExtractor(),
-        SentenceSplitter(chunk_size=1024, chunk_overlap=200),
+        SentenceSplitter(chunk_size=512, chunk_overlap=100),
         OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL),
     ]
 
-    if not os.path.exists(DOCSTORES_PATH):
-        new_storage_context = StorageContext.from_defaults(
-            docstore=SimpleDocumentStore())
-        new_storage_context.persist(persist_dir=DOCSTORES_PATH)
-        docstore = new_storage_context.docstore
+    if not os.path.exists(f"{DOCSTORES_PATH}/{collection_name}"):
+        print(f"Creating new docstore in {DOCSTORES_PATH}/{collection_name}")
+        storage_context = StorageContext.from_defaults(
+            docstore=SimpleDocumentStore(),
+            vector_store=vector_store)
+        storage_context.persist(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
+        docstore = storage_context.docstore
     else:
-        docstore = SimpleDocumentStore.from_persist_dir(persist_dir=DOCSTORES_PATH)
-
+        docstore = SimpleDocumentStore.from_persist_dir(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
+        storage_context = StorageContext.from_defaults(
+            docstore=docstore,
+            vector_store=vector_store)
+            
+    # 1. Define transformations EXCLUDING the vector_store parameter 
     pipeline = IngestionPipeline(transformations=transformations,
-                                 vector_store=vector_store,
-                                 docstore=docstore)
+                                 docstore=docstore,
+                                 docstore_strategy=DocstoreStrategy.UPSERTS)
 
     print(f"Ingesting from {source}")
 
     the_documents = SimpleDirectoryReader(input_dir=source,
                                           required_exts=EXTENSIONS,
                                           filename_as_id=True,
-                                          # num_files_limit=1024,
+                                          num_files_limit=None,
                                           ).load_data()
 
-    print(f"This is the first document: {the_documents[0]}")
-
-    
+    # 2. Extract and embed all nodes in memory first
+    # (This step avoids writing to the database, so it won't crash)
+    print("Processing the pipeline...")
     nodes = pipeline.run(documents=the_documents, num_workers=num_workers)
-    docstore.persist(persist_path=f"{DOCSTORES_PATH}/docstore.json")
 
-    print(f"Ingested {len(nodes)} Nodes")
+    current_doc_ids = set()
+    for doc in the_documents:
+        current_doc_ids.add(doc.id_)
 
+
+    # 3. Safely stream nodes to your vector store using a strict limit
+    CHROMA_SQLITE_LIMIT = 1000
+
+    for i in range(0, len(nodes), CHROMA_SQLITE_LIMIT):
+        node_batch = nodes[i : i + CHROMA_SQLITE_LIMIT]
+    
+        # Explicitly add the chunks to the vector store in safe intervals
+        vector_store.add(node_batch)
+        print(f"Uploaded node batch {i} to {i + len(node_batch)} of {len(nodes)}")
+
+
+    # 4. Purge deleted documents from databases
+    if purge:
+        all_stored_doc_ids = set(storage_context.docstore.docs.keys())
+        ids_to_delete = all_stored_doc_ids - current_doc_ids
+
+        if ids_to_delete:
+            print(f"Cleaning up {len(ids_to_delete)} deleted documents from stores...")
+            for doc_id in ids_to_delete:
+                # 1. Purge from vector store (Chroma)
+                vector_store.delete(doc_id) 
+                # 2. Purge from docstore tracking
+                storage_context.docstore.delete_document(doc_id, raise_error=False)
+
+    storage_context.persist(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
+    
 if __name__ == '__main__':
     ingest()
 
