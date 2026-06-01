@@ -213,6 +213,25 @@ tags:   %s
   :group 'phi)
 
 
+
+
+(defcustom phi-file-extensions
+  '("markdown" "md" "org" "txt" "pl")
+  "List of accepted file extensions for phi."
+  :type '(repeat string)
+  :group 'phi)
+
+(defcustom phi-helm-actions
+  '(("Open note" . helm-phi-find-note-action)
+    ("Insert link to note" . helm-ag-phi-insert-link-action)
+    ("Insert title(s) & link(s)" . helm-phi-insert-titles-and-links-action)
+    ("Insert & assign to this project" . helm-phi-insert-and-assign-action)
+    ("Insert note contents" . helm-phi-insert-body)
+    ("Navigate wiki linked notes" . helm-phi-wiki-linked-action))
+  "Actions for phi Helm."
+  :type '(repeat (cons string function))
+  :group 'phi)
+
 (defcustom phi-annotation-tag "ƒ"
   "Tag for the identification of annotation notes"
   :type 'string
@@ -518,8 +537,8 @@ map from more to less specific types)."
 (defun phi-note-props (buffer)
   "Return alist of basic note properties for BUFFER."
   (let* ((fn (buffer-file-name buffer))
-         (id (phi--get-note-id-from-file-name fn))
-         (title (phi--get-note-title-from-file-name fn)))
+         (id (phi-get-note-id-from-file-name fn))
+         (title (phi-get-note-title-from-file-name fn)))
     (list (cons 'id id)
           (cons 'title title))))
 
@@ -881,24 +900,26 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
   "Return a wikilink for the given `id'"
   (concat phi-link-left-bracket-symbol id phi-link-right-bracket-symbol))
 
-(defun phi--get-note-id-from-file-name (filename)
-  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
-    (when (string-match (concat "^" phi-id-regex) fn)
-      (match-string 0 fn))))
+(defun phi-get-note-id-from-file-name (filename)
+  (when filename
+    (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+      (when (string-match (concat "^" phi-id-regex) fn)
+        (match-string 0 fn)))))
 
-(defun phi--get-note-title-from-file-name (filename)
-  (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
-    (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") fn)
-        (match-string-no-properties 2 fn))))
+(defun phi-get-note-title-from-file-name (filename)
+  (when filename
+    (let ((fn (file-name-sans-extension (file-name-nondirectory filename))))
+      (if (string-match (concat "^\\(" phi-id-regex "\\)\s+\\(.*\\)$") fn)
+          (match-string-no-properties 2 fn)))))
 
 (defun phi-get-current-note-id ()
   "Get the current note id"
   (interactive)
-  (phi--get-note-id-from-file-name buffer-file-name))
+  (phi-get-note-id-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-title ()
   "Get current note title from its filename"
-  (phi--get-note-title-from-file-name buffer-file-name))
+  (phi-get-note-title-from-file-name buffer-file-name))
 
 (defun phi-get-current-note-tlg-fields ()
   "Get the TLG fields for the current note in as plist"
@@ -920,11 +941,21 @@ If optional USECONTEXT is not nil, enforce setting the default directory to the 
         (cdr (assoc (directory-file-name (file-name-directory (expand-file-name filename)))
                     repo-dirs)))))
 
+(defun phi-match-extension (path)
+  "Return the file extension if PATH has an extension in `phi-file-extensions`."
+  (let ((ext (file-name-extension path)))
+    (when ext
+      (member (downcase ext) phi-file-extensions))))
+
+
 (defun phi-matching-file-name (id &optional usecontext path)
   "Return the first match of a file name starting with ID.
-
 If USECONTEXT is not nil, enforce setting the current directory to the note's directory."
-  (nth 0 (file-name-all-completions id (or path (phi-notes-path usecontext))))) ;; blank for current dir instead of phi-notes-path
+  (->> (or path (phi-notes-path usecontext))
+       (file-name-all-completions (format "%s " id))
+       (cl-remove-if-not #'phi-match-extension)
+       (nth 0)))
+
 
 (defun phi-wiki-link-re ()
   (concat phi-link-left-bracket-symbol-re
@@ -1294,12 +1325,15 @@ or otherwise it will be guessed."
   (phi--search-forward-pp)
   (phi-smart-copy-region (- (match-beginning 1) 1) (+ (match-end 2) 1)))
 
+(defun phi-get-current-note-url ()
+  (format "%s://%s" phi-url-protocol (phi-get-current-note-id)))
+
 (defun phi-copy-wikilink ()
   "Copy a wikilink to the current note to the kill buffer. C-u to copy URL with `phi-url-protocol'."
   (interactive)
   (if (equal current-prefix-arg nil)
       (kill-new (format "[[%s]]" (phi-get-current-note-id)))
-    (kill-new (format "%s://%s" phi-url-protocol (phi-get-current-note-id)))))
+    (kill-new (phi-get-current-note-url))))
 
 (defun phi-remove-frontmatter (str)
   (with-temp-buffer
@@ -1612,14 +1646,14 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for cand in (helm-marked-candidates)
            do
            (let* ((filename (helm-phi--get-file-name cand))
-                  (id (phi--get-note-id-from-file-name filename)))
+                  (id (phi-get-note-id-from-file-name filename)))
              (phi-insert-link (current-buffer) (list :id id
                                                      :append " ")))))
 
 (defun helm-phi-insert-title-and-link-action (candidate)
   (let ((filename (helm-phi--get-file-name candidate))
-        (id (phi--get-note-id-from-file-name filename))
-        (title (phi--get-note-title-from-file-name filename)))
+        (id (phi-get-note-id-from-file-name filename))
+        (title (phi-get-note-title-from-file-name filename)))
     (phi-insert-link (current-buffer) (list :id id :description title))))
 
 (defun helm-phi-insert-titles-and-links-action (candidate)
@@ -1627,8 +1661,8 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
   (cl-loop for cand in (helm-marked-candidates)
            do
            (let* ((filename (helm-phi--get-file-name cand))
-                  (id (phi--get-note-id-from-file-name filename))
-                  (title (phi--get-note-title-from-file-name filename)))
+                  (id (phi-get-note-id-from-file-name filename))
+                  (title (phi-get-note-title-from-file-name filename)))
              (phi-insert-link (current-buffer) (list :id id
                                                      :description title
                                                      :prepend "- "
@@ -1652,7 +1686,7 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
 (defun helm-phi-insert-body (candidate)
   (let* ((filename (helm-phi--get-file-name candidate))
          (repo (phi-repository-for-path filename))
-         (id (phi--get-note-id-from-file-name filename)))
+         (id (phi-get-note-id-from-file-name filename)))
     (insert (phi-get-note-body id repo))))
 
 (defun phi--pop-to-buffer-maybe (buffer)
@@ -1708,26 +1742,29 @@ Use `phi-toggle-sidebar' or `quit-window' to close the sidebar."
                                          (append
                                           (list file) ;; include the note itself
                                           (mapcar #'(lambda (x) (concat (file-name-directory file) "/"
-                                                                   (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
+                                                                        (phi-matching-file-name x))) (phi-get-wiki-linked-ids file))))
                      :candidate-transformer 'helm-phi-candidates-transformer
                      :action (helm-phi--build-actions)))
                   (helm-phi--build-sources))
         :buffer (format "*helm phi wiki links in %s*" (file-name-base file))))
 
 
+;; (defun helm-phi--build-actions ()
+;;   (helm-make-actions "Open note"
+;;                      'helm-phi-find-note-action
+;;                      "Insert link to note"
+;;                      'helm-ag-phi-insert-link-action
+;;                      "Insert title(s) & link(s)"
+;;                      'helm-phi-insert-titles-and-links-action
+;;                      "Insert & assign to this project"
+;;                      'helm-phi-insert-and-assign-action
+;;                      "Insert note contents"
+;;                      'helm-phi-insert-body
+;;                      "Navigate wiki linked notes"
+;;                      'helm-phi-wiki-linked-action))
+
 (defun helm-phi--build-actions ()
-  (helm-make-actions "Open note"
-                     'helm-phi-find-note-action
-                     "Insert link to note"
-                     'helm-ag-phi-insert-link-action
-                     "Insert title(s) & link(s)"
-                     'helm-phi-insert-titles-and-links-action
-                     "Insert & assign to this project"
-                     'helm-phi-insert-and-assign-action
-                     "Insert note contents"
-                     'helm-phi-insert-body
-                     "Navigate wiki linked notes"
-                     'helm-phi-wiki-linked-action))
+  phi-helm-actions)
 
 (defun helm-phi-new-note (candidate)
   (phi-new-note :title candidate))
