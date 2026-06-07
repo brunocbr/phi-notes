@@ -50,8 +50,8 @@
 (defcustom phi-brain-helm-actions
   '(("Jump to text in file" .
      (lambda (result) (phi-brain-jump-to-text-in-file
-                  (phi-brain-helm-get-path result)
-                  (alist-get 'document result))))
+                       (phi-brain-helm-get-path result)
+                       (alist-get 'document result))))
     ("Kill titles and wikilinks" .
      (lambda (_) (phi-brain-kill-links-and-titles (helm-marked-candidates)))))
   "Actions for phi-brain Helm."
@@ -136,6 +136,31 @@ Returns parsed JSON results as a list of alists."
       (seq-mapn (lambda (id document metadata distance)
                   `((id . ,id) (document . ,document) (metadata . ,metadata) (distance . ,distance)))
                 ids documents metadatas distances))))
+
+;;;###autoload
+(defun phi-brain-query-diverse (collection query-text &optional limit fetch-limit metadata-key max-per-doc)
+  "Query ChromaDB and filter results to ensure document diversity.
+LIMIT is the final number of unique results returned (default 5).
+FETCH-LIMIT is the number of raw results to fetch from Chroma (default 20).
+METADATA-KEY is the symbol in metadata identifying the document (default 'file_path).
+MAX-PER-DOC is the maximum allowed chunks per document (default 1)."
+  (let* ((limit (or limit 5))
+         (fetch-limit (or fetch-limit (* limit 4)))
+         (metadata-key (or metadata-key 'file_path))
+         (max-per-doc (or max-per-doc 1))
+         (raw-results (phi-brain-query collection query-text fetch-limit))
+         (seen-docs (make-hash-table :test 'equal))
+         (filtered-results '()))
+    (dolist (item raw-results)
+      (let* ((metadata (cdr (assoc 'metadata item)))
+             (doc-id (and metadata (cdr (assoc metadata-key metadata))))
+             (doc-key (or doc-id (cdr (assoc 'id item))))
+             (count (gethash doc-key seen-docs 0)))
+        (when (and (< (length filtered-results) limit)
+                   (< count max-per-doc))
+          (push item filtered-results)
+          (puthash doc-key (1+ count) seen-docs))))
+    (nreverse filtered-results)))
 
 
 (defun phi-brain-get-collections ()
