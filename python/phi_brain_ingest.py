@@ -32,7 +32,7 @@ CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
 
 EXTENSIONS = [".markdown", ".md", ".txt", ".org", ".pl"]
 TEXT_EMBEDDING_MODEL = "text-embedding-3-small"
-
+BATCH_LIMIT = 300
 
 # Set up OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -159,6 +159,17 @@ class HeadingExtractor(TransformComponent):
             self.transform(node)
         return nodes
 
+class BatchedChromaVectorStore(ChromaVectorStore):
+    """Ensure batch limit is respected."""
+
+    def add(self, nodes, **kwargs):
+        added_nodes = []
+        for i in range(0, len(nodes), BATCH_LIMIT):
+            batch = nodes[i : i + BATCH_LIMIT]
+            result = super().add(batch, **kwargs)
+            added_nodes.extend(result)
+            print(f"[Chroma Cloud] Uploaded batch of {len(batch)} nodes ({i + len(batch)}/{len(nodes)})")
+        return added_nodes
 
 # Main ingestion process
 
@@ -188,10 +199,9 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
         db = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
 
     chroma_collection = db.get_or_create_collection(collection_name)
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+    vector_store = BatchedChromaVectorStore(chroma_collection=chroma_collection)
 
     transformations = [
-        YAMLMetadataExtractor(),
         MarkdownTextSplitter(),
         HeadingExtractor(),
         SentenceSplitter(chunk_size=512, chunk_overlap=100),
@@ -217,6 +227,7 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
             vector_store=vector_store)
             
     pipeline = IngestionPipeline(transformations=transformations,
+                                 vector_store=vector_store,
                                  docstore=docstore,
                                  docstore_strategy=DocstoreStrategy.UPSERTS)
 
@@ -228,29 +239,13 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
                                           num_files_limit=None,
                                           ).load_data()
 
+    print("Extracting YAML metadata and cleaning documents...")
+    metadata_extractor = YAMLMetadataExtractor()
+    for doc in the_documents:
+        metadata_extractor.transform(doc)
+
     print(f"Processing the pipeline with {num_workers} workers...")
     nodes = pipeline.run(documents=the_documents, num_workers=num_workers)
-
-    current_doc_ids = set()
-    for doc in the_documents:
-        current_doc_ids.add(doc.id_)
-
-    BATCH_LIMIT = 300
-
-    for i in range(0, len(nodes), BATCH_LIMIT):
-        node_batch = nodes[i : i + BATCH_LIMIT]
-        vector_store.add(node_batch)
-        print(f"Uploaded node batch {i} to {i + len(node_batch)} of {len(nodes)}")
-
-    if purge:
-        all_stored_doc_ids = set(storage_context.docstore.docs.keys())
-        ids_to_delete = all_stored_doc_ids - current_doc_ids
-
-        if ids_to_delete:
-            print(f"Cleaning up {len(ids_to_delete)} deleted documents from stores...")
-            for doc_id in ids_to_delete:
-                vector_store.delete(doc_id) 
-                storage_context.docstore.delete_document(doc_id, raise_error=False)
 
     storage_context.persist(persist_dir=docstore_dir)
     print("Ingestion completed successfully.")
