@@ -16,12 +16,19 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.ingestion.pipeline import IngestionPipeline, DocstoreStrategy
 from llama_index.core.storage.docstore import SimpleDocumentStore
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # Configuration
 CHROMADB_PATH = os.getenv("CHROMADB_PATH", False)
 CHROMADB_HOST = os.getenv("CHROMADB_HOST", "localhost")
 CHROMADB_PORT = os.getenv("CHROMADB_PORT", "8000")
 DOCSTORES_PATH = os.getenv("DOCSTORES_PATH")
+CHROMA_TENANT = os.getenv("CHROMA_TENANT")
+CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
 
 EXTENSIONS = [".markdown", ".md", ".txt", ".org", ".pl"]
 TEXT_EMBEDDING_MODEL = "text-embedding-3-small"
@@ -193,19 +200,28 @@ class HeadingExtractor(TransformComponent):
 
 @click.command()
 @click.argument('collection_name', required=True, type=str)
+@click.option('--cloud', is_flag=True, help='Use ChromaDB from the Cloud') # Corrected: click.option instead of click.argument
 @click.option('--source', required=True, help='Source path for note repository')
-@click.option('--bibliography', required=True, help='Path for Bib(La)TeX .bib file') # TODO: poderia aceitar False
+@click.option('--bibliography', required=True, help='Path for Bib(La)TeX .bib file')
 @click.option('--num_workers', required=False, help='Number of simultaneous workers', default=os.cpu_count())
-@click.option('--purge', is_flag=True, help='Flag to purge the database from documents ' +
-              'corresponding to no longer existant files.') # TODO: implementar
-def ingest(collection_name, source, bibliography, num_workers, purge):
+@click.option('--purge', is_flag=True, help='Flag to purge the database from documents corresponding to no longer existant files.')
+def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
     """CLI tool to create or update chromadb ingesting the phi-notes"""
-
-    print(f"Updating \'{collection_name}\'...")
     
-    if CHROMADB_PATH:
+    print(f"Updating '{collection_name}'...")
+    
+    # Corrected precedence logic for client initialization
+    if cloud:
+        print("Connecting to Chroma Cloud...")
+        db = chromadb.CloudClient(
+            tenant=CHROMA_TENANT,
+            database=CHROMA_DATABASE,
+            api_key=CHROMA_API_KEY)
+    elif CHROMADB_PATH:
+        print(f"Connecting to persistent local database at {CHROMADB_PATH}...")
         db = chromadb.PersistentClient(path=CHROMADB_PATH)
     else:
+        print(f"Connecting to local Chroma HTTP server at {CHROMADB_HOST}:{CHROMADB_PORT}...")
         db = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
 
     chroma_collection = db.get_or_create_collection(collection_name)
@@ -220,20 +236,26 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
         OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL),
     ]
 
-    if not os.path.exists(f"{DOCSTORES_PATH}/{collection_name}"):
-        print(f"Creating new docstore in {DOCSTORES_PATH}/{collection_name}")
+    # Robust local docstore directory definition to avoid errors when DOCSTORES_PATH is empty
+    base_docstore_path = DOCSTORES_PATH if DOCSTORES_PATH else "./docstores"
+    docstore_dir = f"{base_docstore_path}/{collection_name}"
+
+    if not os.path.exists(docstore_dir):
+        print(f"Creating new local docstore tracker in {docstore_dir}")
+        os.makedirs(docstore_dir, exist_ok=True)
+        docstore = SimpleDocumentStore()
         storage_context = StorageContext.from_defaults(
-            docstore=SimpleDocumentStore(),
+            docstore=docstore,
             vector_store=vector_store)
-        storage_context.persist(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
-        docstore = storage_context.docstore
+        storage_context.persist(persist_dir=docstore_dir)
     else:
-        docstore = SimpleDocumentStore.from_persist_dir(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
+        print(f"Loading existing local docstore tracker from {docstore_dir}")
+        docstore = SimpleDocumentStore.from_persist_dir(persist_dir=docstore_dir)
         storage_context = StorageContext.from_defaults(
             docstore=docstore,
             vector_store=vector_store)
             
-    # 1. Define transformations EXCLUDING the vector_store parameter 
+    # Define transformations WITH the robustly bound docstore
     pipeline = IngestionPipeline(transformations=transformations,
                                  docstore=docstore,
                                  docstore_strategy=DocstoreStrategy.UPSERTS)
@@ -246,8 +268,6 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
                                           num_files_limit=None,
                                           ).load_data()
 
-    # 2. Extract and embed all nodes in memory first
-    # (This step avoids writing to the database, so it won't crash)
     print("Processing the pipeline...")
     nodes = pipeline.run(documents=the_documents, num_workers=num_workers)
 
@@ -255,19 +275,15 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
     for doc in the_documents:
         current_doc_ids.add(doc.id_)
 
-
-    # 3. Safely stream nodes to your vector store using a strict limit
+    # Safely stream nodes to your vector store using a strict limit (SQLite limit mitigation)
     CHROMA_SQLITE_LIMIT = 1000
 
     for i in range(0, len(nodes), CHROMA_SQLITE_LIMIT):
         node_batch = nodes[i : i + CHROMA_SQLITE_LIMIT]
-    
-        # Explicitly add the chunks to the vector store in safe intervals
         vector_store.add(node_batch)
         print(f"Uploaded node batch {i} to {i + len(node_batch)} of {len(nodes)}")
 
-
-    # 4. Purge deleted documents from databases
+    # Purge deleted documents from databases
     if purge:
         all_stored_doc_ids = set(storage_context.docstore.docs.keys())
         ids_to_delete = all_stored_doc_ids - current_doc_ids
@@ -280,8 +296,8 @@ def ingest(collection_name, source, bibliography, num_workers, purge):
                 # 2. Purge from docstore tracking
                 storage_context.docstore.delete_document(doc_id, raise_error=False)
 
-    storage_context.persist(persist_dir=f"{DOCSTORES_PATH}/{collection_name}")
+    storage_context.persist(persist_dir=docstore_dir)
+    print("Ingestion completed successfully.")
     
 if __name__ == '__main__':
     ingest()
-
