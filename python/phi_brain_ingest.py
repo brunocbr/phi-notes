@@ -42,14 +42,16 @@ embed_model = OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL)
 METADATA_FIELDS = ['id', 'title', 'author', 'date', 'citekey', 'loc', 'ref_tlg', 'section',
                    'line', 'uplink', 'proj', 'event', 'tags']
 
-class YAMLMetadataExtractor(TransformComponent):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        yaml.add_constructor("tag:yaml.org,2002:timestamp", self.date_as_string,
-                             Loader=yaml.SafeLoader)
 
-    def date_as_string(self, loader, node):
-        return loader.construct_scalar(node)
+# Module-level YAML configuration to ensure pickling compatibility for multiprocessing
+def date_as_string(loader, node):
+    return loader.construct_scalar(node)
+
+yaml.add_constructor("tag:yaml.org,2002:timestamp", date_as_string, Loader=yaml.SafeLoader)
+
+
+class YAMLMetadataExtractor(TransformComponent):
+    """Extracts YAML metadata from the header. Safe for multiprocessing."""
 
     def load_yaml(self, yaml_string):
         return yaml.safe_load(yaml_string)
@@ -102,61 +104,22 @@ class YAMLMetadataExtractor(TransformComponent):
             try:
                 document.text = re.sub(r'^(---|\.\.\.)(.*?)(---|\.\.\.)(\r|\n|$)', '',
                                        document.text, flags=re.DOTALL).strip()
-            except AttributeError: ## TODO: could do better when there's no YAML header
+            except AttributeError:
                 print(f"WARNING: Could not process YAML header in {document.doc_id}")
                 return document
         return document
 
-    def __call__(self, nodes, **kwargs) -> Document:
+    def __call__(self, nodes, **kwargs):
         for node in nodes:
-            node = self.transform(node)
+            self.transform(node)
         return nodes
 
-class BibliographyQuoter(TransformComponent):
-    bib_file_path: str = None
-    bib_entries: list = []
-
-    def __init__(self, bib_file_path: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bib_entries = self.read_biblatex_file(bib_file_path)
-
-    def read_biblatex_file(self, bib_file_path):
-        with open(bib_file_path, 'r') as bib_file:
-            bib_database = bibtexparser.load(bib_file)
-        return bib_database.entries
-
-    def format_bibliography(self, entry, location: str):
-        author = entry.get('author', 'Unknown Author')
-        title = entry.get('title', 'Unknown Title')
-        date = entry.get('year', 'Unknown Date')
-        return f'{author} ({date}). "{title}", p. {location}.' if location else f'{author} ({date}). "{title}".'
-
-    def transform(self, document: Document) -> Document:
-        citekey = document.metadata.get("citekey")
-        loc = document.metadata.get("loc")
-        if citekey:
-            matching_entry = next((entry for entry in self.bib_entries if entry['ID'] == citekey), None)
-            if matching_entry:
-                bib_ref = self.format_bibliography(matching_entry, location=loc)
-                document.metadata.update({'source': bib_ref, 'bib_file_path': self.bib_file_path})
-                for x in ['bib_file_path', 'citekey', 'loc']:
-                    document.excluded_embed_metadata_keys.append(x)
-                document.excluded_llm_metadata_keys.append('bib_file_path')
-        return document
-
-    def __call__(self, nodes, **kwargs) -> Document:
-        for node in nodes:
-            node = self.transform(node)
-        return nodes
 
 class MarkdownTextSplitter(TextSplitter):
-    chunk_size: int = None
+    """Splits markdown text by headers. Uses standard Pydantic annotation to ensure multiprocessing compatibility."""
+    chunk_size: int = 1500
 
-    def __init__(self, chunk_size=1500):
-        super().__init__()
-        self.chunk_size = chunk_size
-
-    def split_text(self, text):
+    def split_text(self, text: str) -> list:
         sections = re.split(r'(#{1,6} .*?\n)', text)
         chunks = []
         current_chunk = ""
@@ -172,9 +135,9 @@ class MarkdownTextSplitter(TextSplitter):
             chunks.append(current_chunk.strip())
         return chunks
 
+
 class HeadingExtractor(TransformComponent):
-    def __init__(self):
-        super().__init__()
+    """Extracts first heading for metadata. Safe for multiprocessing."""
 
     def transform(self, document: Document) -> Document:
         heading_pattern = r'^(#{1,6})\s+(.*)'
@@ -191,26 +154,26 @@ class HeadingExtractor(TransformComponent):
                 break
         return document
 
-    def __call__(self, nodes, **kwargs) -> Document:
+    def __call__(self, nodes, **kwargs):
         for node in nodes:
-            node = self.transform(node)
+            self.transform(node)
         return nodes
+
 
 # Main ingestion process
 
 @click.command()
 @click.argument('collection_name', required=True, type=str)
-@click.option('--cloud', is_flag=True, help='Use ChromaDB from the Cloud') # Corrected: click.option instead of click.argument
+@click.option('--cloud', is_flag=True, help='Use ChromaDB from the Cloud')
 @click.option('--source', required=True, help='Source path for note repository')
 @click.option('--bibliography', required=True, help='Path for Bib(La)TeX .bib file')
-@click.option('--num_workers', required=False, help='Number of simultaneous workers', default=os.cpu_count())
+@click.option('--num_workers', required=False, type=int, help='Number of simultaneous workers', default=os.cpu_count())
 @click.option('--purge', is_flag=True, help='Flag to purge the database from documents corresponding to no longer existant files.')
 def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
     """CLI tool to create or update chromadb ingesting the phi-notes"""
     
     print(f"Updating '{collection_name}'...")
     
-    # Corrected precedence logic for client initialization
     if cloud:
         print("Connecting to Chroma Cloud...")
         db = chromadb.CloudClient(
@@ -229,14 +192,12 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
 
     transformations = [
         YAMLMetadataExtractor(),
-#        BibliographyQuoter(bib_file_path=bibliography),
         MarkdownTextSplitter(),
         HeadingExtractor(),
         SentenceSplitter(chunk_size=512, chunk_overlap=100),
         OpenAIEmbedding(embed_batch_size=10, model=TEXT_EMBEDDING_MODEL),
     ]
 
-    # Robust local docstore directory definition to avoid errors when DOCSTORES_PATH is empty
     base_docstore_path = DOCSTORES_PATH if DOCSTORES_PATH else "./docstores"
     docstore_dir = f"{base_docstore_path}/{collection_name}"
 
@@ -255,7 +216,6 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
             docstore=docstore,
             vector_store=vector_store)
             
-    # Define transformations WITH the robustly bound docstore
     pipeline = IngestionPipeline(transformations=transformations,
                                  docstore=docstore,
                                  docstore_strategy=DocstoreStrategy.UPSERTS)
@@ -268,22 +228,20 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
                                           num_files_limit=None,
                                           ).load_data()
 
-    print("Processing the pipeline...")
+    print(f"Processing the pipeline with {num_workers} workers...")
     nodes = pipeline.run(documents=the_documents, num_workers=num_workers)
 
     current_doc_ids = set()
     for doc in the_documents:
         current_doc_ids.add(doc.id_)
 
-    # Safely stream nodes to your vector store using a strict limit (SQLite limit mitigation)
-    CHROMA_SQLITE_LIMIT = 1000
+    BATCH_LIMIT = 300
 
-    for i in range(0, len(nodes), CHROMA_SQLITE_LIMIT):
-        node_batch = nodes[i : i + CHROMA_SQLITE_LIMIT]
+    for i in range(0, len(nodes), BATCH_LIMIT):
+        node_batch = nodes[i : i + BATCH_LIMIT]
         vector_store.add(node_batch)
         print(f"Uploaded node batch {i} to {i + len(node_batch)} of {len(nodes)}")
 
-    # Purge deleted documents from databases
     if purge:
         all_stored_doc_ids = set(storage_context.docstore.docs.keys())
         ids_to_delete = all_stored_doc_ids - current_doc_ids
@@ -291,9 +249,7 @@ def ingest(collection_name, cloud, source, bibliography, num_workers, purge):
         if ids_to_delete:
             print(f"Cleaning up {len(ids_to_delete)} deleted documents from stores...")
             for doc_id in ids_to_delete:
-                # 1. Purge from vector store (Chroma)
                 vector_store.delete(doc_id) 
-                # 2. Purge from docstore tracking
                 storage_context.docstore.delete_document(doc_id, raise_error=False)
 
     storage_context.persist(persist_dir=docstore_dir)
