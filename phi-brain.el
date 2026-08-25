@@ -1,7 +1,7 @@
 ;;; phi-brain.el --- Emacs package for querying ChromaDB and displaying results with Helm -*- lexical-binding: t; -*-
 
 ;; Author: Bruno Conte
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "24.3") (helm "3.6.2") (json "1.5"))
 ;; Keywords: tools, machine learning, helm, chromadb, zettelkasten
 ;; URL: https://github.com/brunoc_br/phi-notes/phi-brain.el
@@ -24,13 +24,31 @@
   :group 'tools
   :prefix "phi-brain")
 
-(defcustom phi-brain-chromadb-host "localhost"
-  "ChromaDB host address"
+;;; Customization Variables (Configured to dynamically use system/env variables)
+
+(defcustom phi-brain-chromadb-url
+  (let ((host (getenv "CHROMADB_HOST")))
+    (if host
+        (if (string-match-p "^https?://" host)
+            host
+          (concat "https://" host)) ;; Automatically prepends https if missing
+      "http://localhost:8000"))
+  "The base URL of the ChromaDB server. Defaults to CHROMA_HOST env var, or http://localhost:8000."
   :type 'string
   :group 'phi-brain)
 
-(defcustom phi-brain-chromadb-port "8000"
-  "ChromaDB host port"
+(defcustom phi-brain-chromadb-api-key (or (getenv "CHROMA_API_KEY") "")
+  "The API key for Chroma Cloud authentication. Defaults to CHROMA_API_KEY env var."
+  :type 'string
+  :group 'phi-brain)
+
+(defcustom phi-brain-chromadb-tenant (or (getenv "CHROMA_TENANT") "default_tenant")
+  "The tenant name configured on the ChromaDB server. Defaults to CHROMA_TENANT env var."
+  :type 'string
+  :group 'phi-brain)
+
+(defcustom phi-brain-chromadb-database (or (getenv "CHROMA_DATABASE") "default_database")
+  "The database name configured on the ChromaDB server. Defaults to CHROMA_DATABASE env var."
   :type 'string
   :group 'phi-brain)
 
@@ -41,10 +59,15 @@
 
 (defcustom phi-brain-path-transformations-alist nil
   "An alist of regex and transformation pairs for path manipulation.
-            Each pair consists of a regex as the car and a replacement string
-            as the cdr."
+Each pair consists of a regex as the car and a replacement string
+as the cdr."
   :type '(repeat (cons (string :tag "Regular Expression")
                        (string :tag "Replacement")))
+  :group 'phi-brain)
+
+(defcustom phi-brain-fetch-max 300
+  "Maxium number of itens to fetch from vector database"
+  :type 'integer
   :group 'phi-brain)
 
 (defcustom phi-brain-helm-actions
@@ -64,6 +87,13 @@
 (defvar phi-brain-collection-list-cache nil)
 
 (defvar phi-brain-collection-completion-history nil)
+
+(defun phi-brain--headers (&optional extra-headers)
+  "Construct HTTP headers, dynamically adding X-Chroma-Token if API key is defined."
+  (let ((headers (append '(("accept" . "application/json")) extra-headers)))
+    (if (and phi-brain-chromadb-api-key (not (string= phi-brain-chromadb-api-key "")))
+        (cons `("X-Chroma-Token" . ,phi-brain-chromadb-api-key) headers)
+      headers)))
 
 (defun phi-brain-get-text-embedding (text)
   "Obtain an embedding vector for TEXT from OpenAI's API."
@@ -96,8 +126,6 @@ Otherwise, fetch from OpenAI's API and cache the result using an MD5 hash as the
           (puthash text-hash embedding phi-brain-text-embedding-cache)
           embedding))))
 
-;; (phi-brain-get-or-cache-text-embedding "Plato")
-
 (defun phi-brain-get-text ()
   "Get the selected region or the entire buffer as text."
   (if (use-region-p)
@@ -111,13 +139,12 @@ Returns parsed JSON results as a list of alists."
   (let* ((n-results (or n-results 5))
          (embedding (phi-brain-get-or-cache-text-embedding query-text))
          (api-url (concat
-                   "http://" phi-brain-chromadb-host ":" phi-brain-chromadb-port
-                   "/api/v2/tenants/default_tenant/databases/default_database/collections/"
-                   (cdr collection) "/query"))
+                   phi-brain-chromadb-url
+                   "/api/v2/tenants/" phi-brain-chromadb-tenant
+                   "/databases/" phi-brain-chromadb-database
+                   "/collections/" (cdr collection) "/query"))
          (url-request-method "POST")
-         (url-request-extra-headers
-          `(("accept" . "application/json")
-            ("Content-Type" . "application/json")))
+         (url-request-extra-headers (phi-brain--headers '(("Content-Type" . "application/json"))))
          (url-request-data
           (encode-coding-string
            (json-encode `(("include" . ("distances" "metadatas" "documents"))
@@ -162,12 +189,15 @@ MAX-PER-DOC is the maximum allowed chunks per document (default 1)."
           (puthash doc-key (1+ count) seen-docs))))
     (nreverse filtered-results)))
 
-
 (defun phi-brain-get-collections ()
-  "Request from the ChromaDB server and return the list of collections as a list"
+  "Request from the ChromaDB server and return the list of collections as a list."
   (let* ((api-url (concat
-                   "http://" phi-brain-chromadb-host ":" phi-brain-chromadb-port
-                   "/api/v2/tenants/default_tenant/databases/default_database/collections"))
+                   phi-brain-chromadb-url
+                   "/api/v2/tenants/" phi-brain-chromadb-tenant
+                   "/databases/" phi-brain-chromadb-database
+                   "/collections"))
+         (url-request-method "GET")
+         (url-request-extra-headers (phi-brain--headers))
          (response (with-current-buffer (url-retrieve-synchronously api-url)
                      (goto-char url-http-end-of-headers)
                      (json-read)))
@@ -176,10 +206,6 @@ MAX-PER-DOC is the maximum allowed chunks per document (default 1)."
                                       (cdr (assoc 'id entry))))
                               response)))
     collections))
-
-
-;; (phi-brain-get-collections)
-
 
 (defun phi-brain--clean-string (str)
   "Remove newlines, carriage returns, and other stuff from STR."
@@ -193,11 +219,9 @@ MAX-PER-DOC is the maximum allowed chunks per document (default 1)."
        (replace-regexp-in-string "^[ \t]+" "")
        (replace-regexp-in-string " +" " ")))
 
-;; (phi-brain--clean-string "### aa [[1234]] vv")
-
 (defun phi-brain-transform-path (path)
   "Transform the given PATH using transformations defined in
-            `phi-brain-path-transformations-alist`."
+`phi-brain-path-transformations-alist`."
   (dolist (transformation phi-brain-path-transformations-alist)
     (let ((regex (car transformation))
           (replacement (cdr transformation)))
@@ -235,7 +259,7 @@ Displays the filename (without extension), beginning of document, and vector dis
       (truncate-string-to-width
        (format "%s"
                (propertize basename 'face 'font-lock-builtin-face))
-       width-title nil ?\s t #'helm-moccur-buffer) ;; TODO: id highlight
+       width-title nil ?\s t #'helm-moccur-buffer)
       " "
       (truncate-string-to-width
        (propertize info-str 'face 'font-lock-keyword-face)
@@ -299,7 +323,7 @@ highlighting it momentarily."
 ;;;###autoload
 (defun phi-brain-helm-search (&optional text collection-name n-results)
   "Search the current buffer content or selected text in
- COLLECTION-NAME with optional N-RESULTS."
+COLLECTION-NAME with optional N-RESULTS."
   (interactive)
   (let* ((query-text (or text (phi-brain-get-text)))
          (collections (phi-brain-get-collections))
@@ -308,7 +332,7 @@ highlighting it momentarily."
                                           (mapcar #'identity collections)
                                           nil t nil 'phi-brain-collection-completion-history))
                      collections))
-         (results (mapcar #'identity (phi-brain-query col query-text (or n-results 100)))))
+         (results (mapcar #'identity (phi-brain-query-diverse col query-text (or n-results 100) phi-brain-fetch-max))))
     (helm :sources (phi-brain-helm-source results)
           :buffer "*helm phi-brain results*")))
 
