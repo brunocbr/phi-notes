@@ -1303,15 +1303,30 @@ or otherwise it will be guessed."
         (insert (concat " " (phi--pandoc-cite citekey loc))))
       (buffer-string))))
 
-(defun phi-smart-copy-region (start end)
-  "Copy region to kill ring formatted for later quoting."
-  (interactive "r")
+(defun phi-smart-copy-region (start end arg)
+  "Copy region to kill ring formatted for later quoting, i. e.,
+with cite references.
+`C-u' to prefix the text with a wiki-link to the original note.
+`C-uC-u' to postfix the text with a wiki-link."
+  (interactive "r\np")
   (let ((citekey (phi-get-note-field-contents phi-citekey-field))
         (loc (phi-get-note-field-contents phi-loc-field))
         (id (phi-get-current-note-id))
         (region (filter-buffer-substring start end)))
-    (let ((str (format "[[%s]] %s"
-                       id (if citekey (phi-pp-to-pandoc-cite region citekey loc) region))))
+    (let* ((text-with-refs
+            (if citekey
+                (phi-pp-to-pandoc-cite region citekey loc)
+              region))
+           (str
+            (cond
+             ((eq arg 4)
+              (format "[[%s]]: %s"
+                      id text-with-refs))
+             ((eq arg 16)
+              (format "%s [[%s]]"
+                      (string-trim text-with-refs) id))
+             (t
+              text-with-refs))))
       ;; reproduce copy-region-as-kill
       (if (eq last-command 'phi-smart-copy-region)
           (kill-append str (< end beg))
